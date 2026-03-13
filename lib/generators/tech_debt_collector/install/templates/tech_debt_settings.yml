@@ -1,0 +1,63 @@
+version: 1
+
+llm:
+  provider: "openai"
+  model: "gpt-4.1"
+  api_key_env: "OPENAI_API_KEY"
+  max_tokens: 16384
+  temperature: 0.2
+
+analysis:
+  paths:
+    - "app/controllers/**/*.rb"
+    - "app/models/**/*.rb"
+    - "app/services/**/*.rb"
+    - "app/queries/**/*.rb"
+    - "app/jobs/**/*.rb"
+    - "lib/**/*.rb"
+  exclude_paths:
+    - "vendor/**"
+    - "db/migrate/**"
+    - "node_modules/**"
+  debt_types:
+    fat_controller:
+      enabled: true
+      threshold_lines: 100
+      severity: "high"
+    leaked_business_logic:
+      enabled: true
+      severity: "high"
+    semantic_duplication:
+      enabled: true
+      similarity_threshold: 0.85
+      severity: "medium"
+    dead_code:
+      enabled: true
+      severity: "low"
+    missing_concern:
+      enabled: true
+      severity: "medium"
+    high_complexity:
+      enabled: true
+      flog_threshold: 25
+      severity: "high"
+
+github:
+  repo: null
+  labels:
+    - name: "tech-debt"
+      color: "d93f0b"
+    - name: "ai-detected"
+      color: "7057ff"
+    - name: "severity:high"
+      color: "b60205"
+    - name: "severity:medium"
+      color: "fbca04"
+    - name: "severity:low"
+      color: "0e8a16"
+  issue_prefix: "[Tech Debt]"
+  max_issues_per_run: 10
+
+reporting:
+  generate_summary: true
+  summary_path: "tmp/tech_debt_report.json"
