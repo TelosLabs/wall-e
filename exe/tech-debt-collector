@@ -14,7 +14,7 @@ options = {
 }
 
 OptionParser.new do |opts|
-  opts.banner = "Usage: tech_debt_collector [options]"
+  opts.banner = "Usage: tech-debt-collector [options]"
 
   opts.on("--config PATH", "Path to tech debt settings YAML") do |value|
     options[:config_path] = value
