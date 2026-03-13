@@ -47,14 +47,6 @@ github:
   labels:
     - name: "tech-debt"
       color: "d93f0b"
-    - name: "ai-detected"
-      color: "7057ff"
-    - name: "severity:high"
-      color: "b60205"
-    - name: "severity:medium"
-      color: "fbca04"
-    - name: "severity:low"
-      color: "0e8a16"
   issue_prefix: "[Tech Debt Agent]"
   max_issues_per_run: 10
 

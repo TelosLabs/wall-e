@@ -129,6 +129,8 @@ Key sections:
 - `github.labels`, `github.issue_prefix`, `github.max_issues_per_run`
 - `reporting.summary_path`: JSON summary output
 
+`ai-detected` and `severity:*` labels are managed automatically by the gem. Keep `github.labels` for shared/static labels (for example `tech-debt`).
+
 ## CLI options
 
 ```sh
