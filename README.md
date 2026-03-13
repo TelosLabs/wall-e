@@ -39,7 +39,7 @@ Running the install generator adds three project files:
 ```ruby
 # Gemfile
 group :development do
-  gem "tech_debt_collector", git: "https://github.com/TelosLabs/tech_debt_collector.git"
+  gem "tech_debt_collector", github: "TelosLabs/tech_debt_collector"
 end
 ```
 
