@@ -6,6 +6,7 @@ module TechDebtCollector
   module Generators
     class InstallGenerator < Rails::Generators::Base
       source_root File.expand_path("templates", __dir__)
+      namespace "tech-debt-collector:install"
 
       desc "Installs AI tech debt collector workflow, config, and prompt files"
 
@@ -36,7 +37,7 @@ module TechDebtCollector
         say "  2. Review .github/workflows/ai_tech_debt_scan.yml triggers"
         say "  3. Tune config/tech_debt_settings.yml thresholds if needed"
         say "  4. Test locally:"
-        say "     bundle exec tech_debt_collector --dry-run --skip-llm"
+        say "     bundle exec tech-debt-collector --dry-run --skip-llm"
         say ""
       end
     end

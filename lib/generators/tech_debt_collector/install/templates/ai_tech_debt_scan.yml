@@ -33,7 +33,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            bundle exec tech_debt_collector --dry-run
+            bundle exec tech-debt-collector --dry-run
           else
-            bundle exec tech_debt_collector
+            bundle exec tech-debt-collector
           fi
