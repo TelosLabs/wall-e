@@ -39,7 +39,7 @@ Running the install generator adds three project files:
 ```ruby
 # Gemfile
 group :development do
-  gem "tech_debt_collector", github: "TelosLabs/tech_debt_collector"
+  gem "tech-debt-collector", github: "TelosLabs/tech-debt-collector"
 end
 ```
 
@@ -50,7 +50,7 @@ bundle install
 ### 2) Install project files
 
 ```sh
-bin/rails generate tech_debt_collector:install
+bin/rails generate tech-debt-collector:install
 ```
 
 ### 3) Configure GitHub secrets
@@ -90,7 +90,7 @@ This prevents duplicate issues across repeated runs.
 ### Dry run (recommended first)
 
 ```sh
-bundle exec tech_debt_collector --dry-run
+bundle exec tech-debt-collector --dry-run
 ```
 
 Runs analysis and prints what would be created without calling the GitHub Issues API.
@@ -98,7 +98,7 @@ Runs analysis and prints what would be created without calling the GitHub Issues
 ### Dry run without LLM
 
 ```sh
-bundle exec tech_debt_collector --dry-run --skip-llm
+bundle exec tech-debt-collector --dry-run --skip-llm
 ```
 
 Uses only static collectors (`debride`, `flog`) and skips semantic triage.
@@ -132,7 +132,7 @@ Key sections:
 ## CLI options
 
 ```sh
-bundle exec tech_debt_collector [options]
+bundle exec tech-debt-collector [options]
 ```
 
 | Option          | Description                      |
@@ -146,7 +146,7 @@ bundle exec tech_debt_collector [options]
 
 **`cannot load such file -- octokit`**
 
-- Run with bundler: `bundle exec tech_debt_collector`
+- Run with bundler: `bundle exec tech-debt-collector`
 
 **LLM JSON parse errors (`unexpected end of input`)**
 
