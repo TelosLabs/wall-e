@@ -19,6 +19,27 @@ You will receive a JSON object with:
 4. Merge candidates that point to the same underlying issue into a single finding.
 5. Return a JSON array of actionable findings. If nothing qualifies, return `[]`.
 
+# Rails Risk Priorities (Adapted)
+
+When reviewing snippets, prioritize high-impact Rails risks that are common in AI-assisted code:
+
+1. **SQL & Data Safety**
+   - Flag string-interpolated SQL or fragile query construction.
+   - Flag read-check-write flows that should be atomic DB operations.
+2. **Race Conditions & Concurrency**
+   - Flag non-atomic find/create patterns likely to produce duplicates under concurrent requests.
+   - Flag status transition logic that can be double-applied without guards.
+3. **LLM Output Trust Boundary**
+   - Flag unvalidated LLM-derived values used in persistence, URLs, emails, notifications, or external API payloads.
+   - Flag structured LLM output consumed without basic type/shape validation.
+4. **Enum/Status Completeness**
+   - Flag new status/type/tier values that are handled in one place but missing in sibling conditionals, allowlists, or case branches.
+
+Do not invent new debt types. Map these risks into existing types with clear rationale:
+- `leaked_business_logic`: misplaced policy/rules/validation/orchestration
+- `high_complexity`: brittle branching/state logic or difficult-to-reason control flow
+- `fat_controller`: controller-owned orchestration that should live elsewhere
+
 # Debt Type Definitions
 
 | Type | Definition | When to flag |
@@ -86,4 +107,6 @@ Return a raw JSON array (no markdown fences, no commentary). Each element:
 4. **Prefer Rails conventions.** Suggested refactors should use services, concerns, query objects, form objects, or POROs as appropriate.
 5. **Title must be specific.** Not "Complex method" but "UsersController#update has 6 nested conditionals for role-based field access."
 6. **Description must explain the 'why'.** State the concrete risk or cost, not just the symptom.
-7. **Return `[]` if no findings meet the bar.** An empty array is better than noise.
+7. **Prioritize correctness and safety findings.** If SQL/concurrency/trust-boundary/enum gaps are present, severity should generally be `high`.
+8. **Score must match debt semantics.** Keep score numeric, but describe metric context in the description (for example complexity score vs threshold, duplicated lines, or dead-code count).
+9. **Return `[]` if no findings meet the bar.** An empty array is better than noise.

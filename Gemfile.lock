@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    tech_debt_collector (0.1.0)
+    tech-debt-collector (0.1.0)
       debride (~> 1.12)
       flog (~> 4.8)
       octokit (~> 9.0)
@@ -201,7 +201,7 @@ PLATFORMS
 DEPENDENCIES
   rake
   standard
-  tech_debt_collector!
+  tech-debt-collector!
 
 BUNDLED WITH
    2.5.16
