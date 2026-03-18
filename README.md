@@ -59,11 +59,11 @@ Add this repository secret:
 
 - `OPENAI_API_KEY`
 
-`GITHUB_TOKEN` is provided automatically by GitHub Actions and is used for issue queries/creation.
+`GITHUB_TOKEN` is provided automatically by GitHub Actions and is used for issue queries/creation and, by default, for assignment/comment operations when no explicit assignment token is configured.
 
-Optional (only needed if you enable auto-assignment):
+Optional (recommended if you enable auto-assignment or use Copilot-based assignment rules):
 
-- `AGENT_ASSIGN_TOKEN` (PAT from a licensed Copilot/Cursor user for assignment/comment operations)
+- `AGENT_ASSIGN_TOKEN` — Personal Access Token from a licensed Copilot/Cursor user for assignment/comment operations. If this is not set, the action will fall back to `GITHUB_TOKEN`, which may not be sufficient for some assignment providers (for example, Copilot assignment may require a user PAT).
 
 ## How it works
 
@@ -153,8 +153,8 @@ auto_assign:
 
 How each mode works:
 
-- `agent: "copilot"`: assigns the issue to `@copilot`
-- `agent: "cursor"`: posts an `@cursor` comment with your configured prompt
+- `agent: "copilot"`: assigns the issue to `copilot`
+- `agent: "cursor"`: posts a `cursor` comment with your configured prompt
 
 Recommended setup:
 

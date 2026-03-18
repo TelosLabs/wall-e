@@ -35,7 +35,10 @@ module TechDebt
     end
 
     def auto_assign
-      raw.fetch("auto_assign", { "enabled" => false })
+      value = raw["auto_assign"]
+      return { "enabled" => false } unless value.is_a?(Hash)
+
+      { "enabled" => false }.merge(value)
     end
 
     private

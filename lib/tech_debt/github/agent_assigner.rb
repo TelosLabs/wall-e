@@ -18,10 +18,12 @@ module TechDebt
 
       def initialize(config)
         @config = config
-        @settings = config.auto_assign || {}
+        raw_settings = config.auto_assign
+        @settings = raw_settings.is_a?(Hash) ? raw_settings : {}
         @repo = config.github["repo"] || ENV["GITHUB_REPOSITORY"]
+        raw_filters = @settings["filters"]
+        @filters = raw_filters.is_a?(Hash) ? raw_filters : {}
         @agent = @settings.fetch("agent", "copilot").to_s.downcase
-        @filters = @settings.fetch("filters", {})
         @token_env = @settings.fetch("token_env", "AGENT_ASSIGN_TOKEN")
 
         token = ENV[@token_env]
