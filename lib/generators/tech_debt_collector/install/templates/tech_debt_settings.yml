@@ -1,9 +1,9 @@
 version: 1
 
 llm:
-  provider: "openai"
+  provider: "openai" # "openai" | "anthropic"
   model: "gpt-4.1"
-  api_key_env: "OPENAI_API_KEY"
+  api_key_env: "OPENAI_API_KEY" # "OPENAI_API_KEY" | "ANTHROPIC_API_KEY"
   max_tokens: 16384
   temperature: 0.2
 
@@ -20,30 +20,30 @@ analysis:
     - "db/migrate/**"
     - "node_modules/**"
   debt_types:
-    fat_controller:
+    fat_controller: # controller-owned orchestration that should live elsewhere
       enabled: true
       threshold_lines: 100
       severity: "high"
-    leaked_business_logic:
+    leaked_business_logic: # business rules living outside the domain layer (in controllers, views, helpers, jobs, or rake tasks)
       enabled: true
       severity: "high"
-    semantic_duplication:
+    semantic_duplication: # functionally identical or near-identical logic in two or more locations, even if variable names or structure differ
       enabled: true
       similarity_threshold: 0.85
       severity: "medium"
-    dead_code:
+    dead_code: # methods, classes, or modules that are defined but never called or referenced anywhere in the application
       enabled: true
       severity: "low"
-    missing_concern:
+    missing_concern: # shared behavior across multiple models/controllers that should be extracted into a Rails Concern
       enabled: true
       severity: "medium"
-    high_complexity:
+    high_complexity: # a method with deeply nested conditionals, excessive branching, or a high cyclomatic/flog complexity score
       enabled: true
       flog_threshold: 25
       severity: "high"
 
 github:
-  repo: null
+  repo: null # if not set, GITHUB_REPOSITORY is used
   labels:
     - name: "tech-debt"
       color: "d93f0b"
@@ -55,12 +55,12 @@ reporting:
   summary_path: "tmp/tech_debt_report.json"
 
 auto_assign:
-  enabled: false
-  agent: "copilot"
-  token_env: "AGENT_ASSIGN_TOKEN"
+  enabled: true
+  agent: "copilot" # "copilot" | "cursor"
+  token_env: "AGENT_ASSIGN_TOKEN" # if secret is not set, GITHUB_TOKEN is used
   filters:
-    min_severity: "medium"
-    debt_types: []
+    min_severity: "medium" # low, medium, high
+    debt_types: [] # Empty for all debt types
   cursor_prompt: |
     Analyze and fix this tech debt issue. Read the description for file path,
     debt type, and suggested refactoring approach. Open a PR when done.
