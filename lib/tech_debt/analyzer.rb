@@ -5,6 +5,7 @@ require "json"
 require_relative "collectors/debride_collector"
 require_relative "collectors/complexity_collector"
 require_relative "github/fingerprint"
+require_relative "github/agent_assigner"
 require_relative "github/issue_manager"
 require_relative "semantic/triage"
 
@@ -62,6 +63,7 @@ module TechDebt
 
       manager = Github::IssueManager.new(@config)
       manager.ensure_labels!
+      assigner = build_assigner
 
       created = []
       skipped = []
@@ -73,11 +75,13 @@ module TechDebt
         end
 
         issue = manager.create_issue(item, fingerprint)
+        agent_assigned = assigner ? assigner.assign(item, issue.number) : false
         created << {
           "number" => issue.number,
           "url" => issue.html_url,
           "title" => issue.title,
-          "fingerprint" => fingerprint
+          "fingerprint" => fingerprint,
+          "agent_assigned" => agent_assigned
         }
       end
 
@@ -111,6 +115,12 @@ module TechDebt
 
     def max_issues_per_run
       @config.github.fetch("max_issues_per_run", 10).to_i
+    end
+
+    def build_assigner
+      return nil unless @config.auto_assign["enabled"]
+
+      Github::AgentAssigner.new(@config)
     end
   end
 end

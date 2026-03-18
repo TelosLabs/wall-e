@@ -34,9 +34,10 @@ module TechDebtCollector
         say "Next steps:", :yellow
         say ""
         say "  1. Add OPENAI_API_KEY as a GitHub Actions secret"
-        say "  2. Review .github/workflows/ai_tech_debt_scan.yml triggers"
-        say "  3. Tune config/tech_debt_settings.yml thresholds if needed"
-        say "  4. Test locally:"
+        say "  2. (Optional) Add AGENT_ASSIGN_TOKEN for auto-assign to Copilot/Cursor"
+        say "  3. Review .github/workflows/ai_tech_debt_scan.yml triggers"
+        say "  4. Tune config/tech_debt_settings.yml thresholds if needed"
+        say "  5. Test locally:"
         say "     bundle exec tech-debt-collector --dry-run --skip-llm"
         say ""
       end

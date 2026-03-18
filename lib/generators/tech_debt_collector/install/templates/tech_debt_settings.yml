@@ -53,3 +53,14 @@ github:
 reporting:
   generate_summary: true
   summary_path: "tmp/tech_debt_report.json"
+
+auto_assign:
+  enabled: false
+  agent: "copilot"
+  token_env: "AGENT_ASSIGN_TOKEN"
+  filters:
+    min_severity: "medium"
+    debt_types: []
+  cursor_prompt: |
+    Analyze and fix this tech debt issue. Read the description for file path,
+    debt type, and suggested refactoring approach. Open a PR when done.

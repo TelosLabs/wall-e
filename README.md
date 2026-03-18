@@ -61,14 +61,29 @@ Add this repository secret:
 
 `GITHUB_TOKEN` is provided automatically by GitHub Actions and is used for issue queries/creation.
 
+Optional (only needed if you enable auto-assignment):
+
+- `AGENT_ASSIGN_TOKEN` (PAT from a licensed Copilot/Cursor user for assignment/comment operations)
+
 ## How it works
 
 1. Collect static candidates from dead-code and complexity analyzers.
 2. Read code snippets for candidate files.
-3. Send candidates + snippets to the LLM for semantic triage.
+3. Send candidates + snippets to the LLM for semantic triage with Rails-focused risk checks.
 4. Normalize findings and compute fingerprints.
 5. Search GitHub Issues for existing fingerprints.
 6. Create only new issues (idempotent behavior).
+
+### Triage priorities
+
+The default prompt prioritizes high-impact Rails risks when they appear in scanned snippets:
+
+- SQL/data safety issues and fragile query construction
+- Race/concurrency risks in read-check-write flows
+- Unvalidated LLM output crossing trust boundaries
+- Enum/status completeness gaps across branches/allowlists
+
+These are still emitted using the existing debt taxonomy (`fat_controller`, `leaked_business_logic`, `semantic_duplication`, `missing_concern`, `dead_code`, `high_complexity`) to keep output stable.
 
 ## Fingerprinting and deduplication
 
@@ -117,6 +132,50 @@ Manual run example:
 3. Click **Run workflow**
 4. Set `dry_run=true` for safe validation
 
+## Auto-assign AI agents
+
+You can optionally auto-dispatch newly created issues to an AI coding agent right after issue creation.
+
+Add this to `config/tech_debt_settings.yml`:
+
+```yaml
+auto_assign:
+  enabled: true
+  agent: "copilot" # "copilot" | "cursor"
+  token_env: "AGENT_ASSIGN_TOKEN"
+  filters:
+    min_severity: "medium" # low, medium, high
+    debt_types: [] # empty means all debt types
+  cursor_prompt: |
+    Analyze and fix this tech debt issue. Read the description for file path,
+    debt type, and suggested refactoring approach. Open a PR when done.
+```
+
+How each mode works:
+
+- `agent: "copilot"`: assigns the issue to `@copilot`
+- `agent: "cursor"`: posts an `@cursor` comment with your configured prompt
+
+Recommended setup:
+
+1. Keep `enabled: false` first and run one scan to validate issue quality.
+2. Add `AGENT_ASSIGN_TOKEN` as a repo/org secret.
+3. Enable with a conservative filter (`min_severity: "high"`), then relax later.
+
+### Copilot setup
+
+- Enable Copilot coding agent for the repository/org.
+- Create a PAT from a Copilot-licensed user with minimal permissions (Issues write + Metadata read).
+- Store PAT in `AGENT_ASSIGN_TOKEN`.
+
+### Cursor setup
+
+- Install the Cursor GitHub App on the org/repo.
+- Use a PAT from a Cursor team user in `AGENT_ASSIGN_TOKEN`.
+- Tune `cursor_prompt` to enforce your branch/PR/testing conventions.
+
+Assignment is best-effort: if assignment fails, issue creation still succeeds.
+
 ## Configuration reference
 
 Main settings are in `config/tech_debt_settings.yml`.
@@ -128,8 +187,20 @@ Key sections:
 - `analysis.debt_types`: per-debt toggles and thresholds
 - `github.labels`, `github.issue_prefix`, `github.max_issues_per_run`
 - `reporting.summary_path`: JSON summary output
+- `auto_assign`: optional post-creation dispatch to Copilot or Cursor
 
 `ai-detected` and `severity:*` labels are managed automatically by the gem. Keep `github.labels` for shared/static labels (for example `tech-debt`).
+
+The semantic triage behavior is defined in `.github/prompts/tech_debt_analysis.md` (installed by the generator), so teams can tune strictness and wording for their codebase.
+
+## Interpreting scores
+
+`score` is numeric for sorting/prioritization, but not all debt types use the same scale:
+
+- `high_complexity`: complexity metric (for example flog score) relative to configured threshold
+- `semantic_duplication`: estimated duplicated impact/lines
+- `dead_code`: count-based dead-code signal
+- Other types: heuristic impact estimate (0-100)
 
 ## CLI options
 

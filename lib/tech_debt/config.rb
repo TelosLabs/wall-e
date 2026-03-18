@@ -34,6 +34,10 @@ module TechDebt
       raw.fetch("reporting")
     end
 
+    def auto_assign
+      raw.fetch("auto_assign", { "enabled" => false })
+    end
+
     private
 
     def validate!
