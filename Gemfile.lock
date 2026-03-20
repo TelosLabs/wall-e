@@ -3,6 +3,7 @@ PATH
   specs:
     wall-e (0.1.0)
       debride (~> 1.12)
+      faraday-retry
       flog (~> 4.8)
       octokit (~> 9.0)
       railties (>= 7.0)
@@ -66,6 +67,8 @@ GEM
       multipart-post (~> 2.0)
     faraday-net_http (3.4.2)
       net-http (~> 0.5)
+    faraday-retry (2.4.0)
+      faraday (~> 2.0)
     flog (4.9.4)
       path_expander (~> 2.0)
       prism (~> 1.7)

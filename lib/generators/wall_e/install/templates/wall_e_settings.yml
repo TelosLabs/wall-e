@@ -6,6 +6,8 @@ llm:
   api_key_env: "OPENAI_API_KEY" # "OPENAI_API_KEY" | "ANTHROPIC_API_KEY"
   max_tokens: 16384
   temperature: 0.2
+  retry_attempts: 3
+  retry_base_delay_seconds: 1.0
 
 analysis:
   paths:

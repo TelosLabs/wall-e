@@ -183,6 +183,7 @@ Main settings are in `config/wall_e_settings.yml`.
 Key sections:
 
 - `llm`: provider/model/token env/temperature/token budget
+- `llm.retry_attempts` and `llm.retry_base_delay_seconds`: exponential backoff for OpenAI 429s
 - `analysis.paths` and `analysis.exclude_paths`: scan scope
 - `analysis.debt_types`: per-debt toggles and thresholds
 - `github.labels`, `github.issue_prefix`, `github.max_issues_per_run`
@@ -237,6 +238,11 @@ bundle exec wall-e [options]
 
 - Verify `OPENAI_API_KEY` is present in repository secrets
 - Confirm `llm.model` is a valid model for your account/project
+
+**OpenAI 429 rate limits**
+
+- Increase `llm.retry_attempts` and/or `llm.retry_base_delay_seconds`
+- Reduce scanned scope in `analysis.paths` or run in dry mode while tuning
 
 ## TODO
 
