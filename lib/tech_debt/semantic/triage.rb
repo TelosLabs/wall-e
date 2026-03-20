@@ -15,12 +15,26 @@ module TechDebt
 
       def call(candidates)
         system_prompt = File.read(@prompt_path)
-        user_prompt = PromptBuilder.new(candidates: candidates).build
-        content = @llm_client.triage(system_prompt: system_prompt, user_prompt: user_prompt)
-        parse_json(content)
+        sorted = candidates.sort_by { |candidate| candidate[:file].to_s }
+
+        sorted.each_slice(batch_size).flat_map.with_index do |batch, index|
+          sleep(inter_batch_delay_seconds) if index.positive?
+          user_prompt = PromptBuilder.new(candidates: batch).build
+          content = @llm_client.triage(system_prompt: system_prompt, user_prompt: user_prompt)
+          parse_json(content)
+        end
       end
 
       private
+
+      def batch_size
+        configured = @config.llm.fetch("batch_size", 15).to_i
+        configured.positive? ? configured : 1
+      end
+
+      def inter_batch_delay_seconds
+        @config.llm.fetch("inter_batch_delay_seconds", 2.0).to_f
+      end
 
       def parse_json(content)
         raw = strip_code_fences(content)

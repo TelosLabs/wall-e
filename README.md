@@ -184,6 +184,7 @@ Key sections:
 
 - `llm`: provider/model/token env/temperature/token budget
 - `llm.retry_attempts` and `llm.retry_base_delay_seconds`: exponential backoff for OpenAI 429s
+- `llm.batch_size` and `llm.inter_batch_delay_seconds`: split semantic triage into smaller LLM calls
 - `analysis.paths` and `analysis.exclude_paths`: scan scope
 - `analysis.debt_types`: per-debt toggles and thresholds
 - `github.labels`, `github.issue_prefix`, `github.max_issues_per_run`
@@ -242,6 +243,8 @@ bundle exec wall-e [options]
 **OpenAI 429 rate limits**
 
 - Increase `llm.retry_attempts` and/or `llm.retry_base_delay_seconds`
+- Decrease `llm.batch_size` (for example `10` or `8`) to lower per-request token load
+- Increase `llm.inter_batch_delay_seconds` (for example `3.0` or `5.0`) to reduce request burstiness
 - Reduce scanned scope in `analysis.paths` or run in dry mode while tuning
 
 ## TODO

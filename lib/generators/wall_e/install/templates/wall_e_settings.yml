@@ -8,6 +8,8 @@ llm:
   temperature: 0.2
   retry_attempts: 3
   retry_base_delay_seconds: 1.0
+  batch_size: 15
+  inter_batch_delay_seconds: 2.0
 
 analysis:
   paths:

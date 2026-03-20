@@ -37,13 +37,32 @@ module TechDebt
 
         begin
           yield
-        rescue Faraday::TooManyRequestsError
+        rescue Faraday::TooManyRequestsError => error
           attempts += 1
           raise if attempts > retry_attempts
 
-          sleep((retry_base_delay_seconds * (2**(attempts - 1))) + rand * 0.25)
+          sleep(retry_wait_seconds(error, attempts) + rand * 0.5)
           retry
         end
+      end
+
+      def retry_wait_seconds(error, attempts)
+        retry_after_seconds(error) || (retry_base_delay_seconds * (2**(attempts - 1)))
+      end
+
+      def retry_after_seconds(error)
+        response = error.response
+        return nil unless response.is_a?(Hash)
+
+        headers = response[:headers]
+        return nil unless headers.respond_to?(:[])
+
+        value = headers["retry-after"] || headers["Retry-After"]
+        return nil if value.nil?
+
+        Float(value)
+      rescue ArgumentError, TypeError
+        nil
       end
 
       def retry_attempts
