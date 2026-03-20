@@ -42,7 +42,7 @@ module TechDebt
       end
 
       def create_issue(item, fingerprint)
-        title = "#{@config.github.fetch('issue_prefix', '[Tech Debt Agent]')} #{item.fetch('title')}"
+        title = "#{@config.github.fetch('issue_prefix', '[wall-e]')} #{item.fetch('title')}"
         body = build_issue_body(item, fingerprint)
         labels = base_labels + ['ai-detected', severity_label_for(item)]
         @client.create_issue(@repo, title, body, labels: labels.uniq)

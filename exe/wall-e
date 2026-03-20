@@ -7,16 +7,16 @@ require "tech_debt/config"
 require "tech_debt/analyzer"
 
 options = {
-  config_path: "config/tech_debt_settings.yml",
-  prompt_path: ".github/prompts/tech_debt_analysis.md",
+  config_path: "config/wall_e_settings.yml",
+  prompt_path: ".github/prompts/wall_e_analysis.md",
   dry_run: false,
   skip_llm: false
 }
 
 OptionParser.new do |opts|
-  opts.banner = "Usage: tech-debt-collector [options]"
+  opts.banner = "Usage: wall-e [options]"
 
-  opts.on("--config PATH", "Path to tech debt settings YAML") do |value|
+  opts.on("--config PATH", "Path to wall-e settings YAML") do |value|
     options[:config_path] = value
   end
 

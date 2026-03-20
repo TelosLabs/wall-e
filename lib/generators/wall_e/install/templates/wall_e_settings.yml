@@ -47,12 +47,12 @@ github:
   labels:
     - name: "tech-debt"
       color: "d93f0b"
-  issue_prefix: "[Tech Debt Agent]"
+  issue_prefix: "[wall-e]"
   max_issues_per_run: 10
 
 reporting:
   generate_summary: true
-  summary_path: "tmp/tech_debt_report.json"
+  summary_path: "tmp/wall_e_report.json"
 
 auto_assign:
   enabled: true

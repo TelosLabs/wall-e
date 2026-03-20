@@ -1,8 +1,8 @@
-# Tech Debt Collector
+# wall-e
 
 AI-powered semantic tech debt scanning for Ruby on Rails applications.
 
-`tech_debt_collector` helps teams detect and track architectural debt that linters usually miss: duplicated business logic, leaked domain rules, dead code, and complexity hotspots. It runs in GitHub Actions, triages findings with an LLM, and creates deduplicated GitHub Issues using deterministic fingerprints.
+`wall-e` helps teams detect and track architectural debt that linters usually miss: duplicated business logic, leaked domain rules, dead code, and complexity hotspots. It runs in GitHub Actions, triages findings with an LLM, and creates deduplicated GitHub Issues using deterministic fingerprints.
 
 ## Why this gem exists
 
@@ -21,9 +21,9 @@ Running the install generator adds three project files:
 
 | File                                      | Purpose                            |
 | ----------------------------------------- | ---------------------------------- |
-| `.github/workflows/ai_tech_debt_scan.yml` | Scheduled/manual CI runner         |
-| `config/tech_debt_settings.yml`           | Scanner, model, and issue settings |
-| `.github/prompts/tech_debt_analysis.md`   | System prompt for semantic triage  |
+| `.github/workflows/wall_e_scan.yml` | Scheduled/manual CI runner         |
+| `config/wall_e_settings.yml`        | Scanner, model, and issue settings |
+| `.github/prompts/wall_e_analysis.md`| System prompt for semantic triage  |
 
 ## Requirements
 
@@ -39,7 +39,7 @@ Running the install generator adds three project files:
 ```ruby
 # Gemfile
 group :development do
-  gem "tech-debt-collector", github: "TelosLabs/tech-debt-collector"
+  gem "wall-e", github: "TelosLabs/wall-e"
 end
 ```
 
@@ -50,7 +50,7 @@ bundle install
 ### 2) Install project files
 
 ```sh
-bin/rails generate tech_debt_collector:install
+bin/rails generate wall_e:install
 ```
 
 ### 3) Configure GitHub secrets
@@ -105,7 +105,7 @@ This prevents duplicate issues across repeated runs.
 ### Dry run (recommended first)
 
 ```sh
-bundle exec tech-debt-collector --dry-run
+bundle exec wall-e --dry-run
 ```
 
 Runs analysis and prints what would be created without calling the GitHub Issues API.
@@ -113,7 +113,7 @@ Runs analysis and prints what would be created without calling the GitHub Issues
 ### Dry run without LLM
 
 ```sh
-bundle exec tech-debt-collector --dry-run --skip-llm
+bundle exec wall-e --dry-run --skip-llm
 ```
 
 Uses only static collectors (`debride`, `flog`) and skips semantic triage.
@@ -128,7 +128,7 @@ The installed workflow supports:
 Manual run example:
 
 1. Open **Actions** in your repo
-2. Select **AI Tech Debt Scan**
+2. Select **wall-e Scan**
 3. Click **Run workflow**
 4. Set `dry_run=true` for safe validation
 
@@ -136,7 +136,7 @@ Manual run example:
 
 You can optionally auto-dispatch newly created issues to an AI coding agent right after issue creation.
 
-Add this to `config/tech_debt_settings.yml`:
+Add this to `config/wall_e_settings.yml`:
 
 ```yaml
 auto_assign:
@@ -178,7 +178,7 @@ Assignment is best-effort: if assignment fails, issue creation still succeeds.
 
 ## Configuration reference
 
-Main settings are in `config/tech_debt_settings.yml`.
+Main settings are in `config/wall_e_settings.yml`.
 
 Key sections:
 
@@ -191,7 +191,7 @@ Key sections:
 
 `ai-detected` and `severity:*` labels are managed automatically by the gem. Keep `github.labels` for shared/static labels (for example `tech-debt`).
 
-The semantic triage behavior is defined in `.github/prompts/tech_debt_analysis.md` (installed by the generator), so teams can tune strictness and wording for their codebase.
+The semantic triage behavior is defined in `.github/prompts/wall_e_analysis.md` (installed by the generator), so teams can tune strictness and wording for their codebase.
 
 ## Interpreting scores
 
@@ -205,7 +205,7 @@ The semantic triage behavior is defined in `.github/prompts/tech_debt_analysis.m
 ## CLI options
 
 ```sh
-bundle exec tech-debt-collector [options]
+bundle exec wall-e [options]
 ```
 
 | Option          | Description                      |
@@ -219,7 +219,7 @@ bundle exec tech-debt-collector [options]
 
 **`cannot load such file -- octokit`**
 
-- Run with bundler: `bundle exec tech-debt-collector`
+- Run with bundler: `bundle exec wall-e`
 
 **LLM JSON parse errors (`unexpected end of input`)**
 

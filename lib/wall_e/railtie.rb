@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-module TechDebtCollector
+module WallE
   class Railtie < Rails::Railtie
     generators do
-      require "generators/tech_debt_collector/install/install_generator"
+      require "generators/wall_e/install/install_generator"
     end
   end
 end

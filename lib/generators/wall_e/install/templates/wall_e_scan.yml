@@ -1,4 +1,4 @@
-name: AI Tech Debt Scan
+name: wall-e Scan
 
 on:
   schedule:
@@ -15,7 +15,7 @@ permissions:
   issues: write
 
 jobs:
-  tech_debt_scan:
+  wall_e_scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -26,14 +26,14 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Run AI tech debt collector
+      - name: Run wall-e
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           AGENT_ASSIGN_TOKEN: ${{ secrets.AGENT_ASSIGN_TOKEN }}
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            bundle exec tech-debt-collector --dry-run
+            bundle exec wall-e --dry-run
           else
-            bundle exec tech-debt-collector
+            bundle exec wall-e
           fi

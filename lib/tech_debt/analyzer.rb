@@ -108,7 +108,7 @@ module TechDebt
     end
 
     def write_summary(summary)
-      path = @config.reporting.fetch("summary_path", "tmp/tech_debt_report.json")
+      path = @config.reporting.fetch("summary_path", "tmp/wall_e_report.json")
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, JSON.pretty_generate(summary))
     end
