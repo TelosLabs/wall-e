@@ -44,8 +44,13 @@ module TechDebt
         end
 
         true
+      rescue Octokit::NotFound => e
+        warn "[wall-e] Auto-assignment failed for issue ##{issue_number}: #{e.message}. " \
+             "For Copilot: ensure coding agent is enabled for the repo/org and the token " \
+             "has Issues write + Metadata read permissions (use a PAT from a Copilot-licensed user)."
+        false
       rescue StandardError => e
-        warn "Auto-assignment failed for issue ##{issue_number}: #{e.class} - #{e.message}"
+        warn "[wall-e] Auto-assignment failed for issue ##{issue_number}: #{e.class} - #{e.message}"
         false
       end
 
@@ -88,15 +93,10 @@ module TechDebt
         fallback
       end
 
-      def assign_copilot(issue_number)
-        unless @client.check_assignee(@repo, "copilot")
-          warn "[wall-e] 'copilot' is not a valid assignee for #{@repo}. " \
-               "Ensure Copilot coding agent is enabled for the repository/org " \
-               "and the token has Issues write permission."
-          return
-        end
+      COPILOT_ASSIGNEE = "copilot-swe-agent[bot]"
 
-        @client.add_assignees(@repo, issue_number, ["copilot"])
+      def assign_copilot(issue_number)
+        @client.add_assignees(@repo, issue_number, [COPILOT_ASSIGNEE])
       end
 
       def assign_cursor(issue_number, item)

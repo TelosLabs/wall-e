@@ -248,10 +248,11 @@ bundle exec wall-e [options]
 - Increase `llm.inter_batch_delay_seconds` (for example `3.0` or `5.0`) to reduce request burstiness
 - Reduce scanned scope in `analysis.paths` or run in dry mode while tuning
 
-**Auto-assignment 404 (`copilot is not a valid assignee`)**
+**Auto-assignment 404 for Copilot**
 
 - Ensure Copilot coding agent is enabled for the repository/organization
-- Create a PAT from a Copilot-licensed user and store it in `AGENT_ASSIGN_TOKEN`
+- Create a fine-grained PAT from a Copilot-licensed user with Issues write + Metadata read permissions
+- Store the PAT in `AGENT_ASSIGN_TOKEN` as a repository or organization secret
 - The default `GITHUB_TOKEN` does not have sufficient scope for Copilot assignment
 - If you do not want auto-assignment, set `auto_assign.enabled: false` in your config
 
