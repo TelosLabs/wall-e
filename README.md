@@ -210,12 +210,13 @@ The semantic triage behavior is defined in `.github/prompts/wall_e_analysis.md` 
 bundle exec wall-e [options]
 ```
 
-| Option          | Description                      |
-| --------------- | -------------------------------- |
-| `--config PATH` | Path to settings YAML            |
-| `--prompt PATH` | Path to semantic prompt markdown |
-| `--dry-run`     | Do not create issues             |
-| `--skip-llm`    | Skip semantic triage             |
+| Option            | Description                                |
+| ----------------- | ------------------------------------------ |
+| `--config PATH`   | Path to settings YAML                      |
+| `--prompt PATH`   | Path to semantic prompt markdown           |
+| `--dry-run`       | Do not create issues                       |
+| `--skip-llm`      | Skip semantic triage                       |
+| `--max-issues N`  | Override max issues to create (for testing)|
 
 ## Troubleshooting
 
@@ -246,6 +247,13 @@ bundle exec wall-e [options]
 - Decrease `llm.batch_size` (for example `10` or `8`) to lower per-request token load
 - Increase `llm.inter_batch_delay_seconds` (for example `3.0` or `5.0`) to reduce request burstiness
 - Reduce scanned scope in `analysis.paths` or run in dry mode while tuning
+
+**Auto-assignment 404 (`copilot is not a valid assignee`)**
+
+- Ensure Copilot coding agent is enabled for the repository/organization
+- Create a PAT from a Copilot-licensed user and store it in `AGENT_ASSIGN_TOKEN`
+- The default `GITHUB_TOKEN` does not have sufficient scope for Copilot assignment
+- If you do not want auto-assignment, set `auto_assign.enabled: false` in your config
 
 ## TODO
 

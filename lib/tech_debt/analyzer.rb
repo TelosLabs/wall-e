@@ -16,7 +16,8 @@ module TechDebt
       @prompt_path = prompt_path
     end
 
-    def run(dry_run: false, skip_llm: false)
+    def run(dry_run: false, skip_llm: false, max_issues: nil)
+      @max_issues_override = max_issues
       candidates = collect_candidates
       findings = if skip_llm
                    candidates_to_findings(candidates)
@@ -114,7 +115,7 @@ module TechDebt
     end
 
     def max_issues_per_run
-      @config.github.fetch("max_issues_per_run", 10).to_i
+      (@max_issues_override || @config.github.fetch("max_issues_per_run", 10)).to_i
     end
 
     def build_assigner

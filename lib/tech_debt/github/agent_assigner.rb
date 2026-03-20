@@ -26,8 +26,7 @@ module TechDebt
         @agent = @settings.fetch("agent", "copilot").to_s.downcase
         @token_env = @settings.fetch("token_env", "AGENT_ASSIGN_TOKEN")
 
-        token = ENV[@token_env]
-        token = ENV["GITHUB_TOKEN"] if token.to_s.strip.empty?
+        token = resolve_token
         @client = Octokit::Client.new(access_token: token)
       end
 
@@ -73,7 +72,30 @@ module TechDebt
         allowed.include?(item.fetch("debt_type").to_s)
       end
 
+      def resolve_token
+        explicit = ENV[@token_env]
+        unless explicit.to_s.strip.empty?
+          warn "[wall-e] Using #{@token_env} for auto-assignment"
+          return explicit
+        end
+
+        fallback = ENV["GITHUB_TOKEN"]
+        if fallback.to_s.strip.empty?
+          warn "[wall-e] WARNING: Neither #{@token_env} nor GITHUB_TOKEN is set; auto-assignment will fail"
+        else
+          warn "[wall-e] #{@token_env} not set, falling back to GITHUB_TOKEN for auto-assignment"
+        end
+        fallback
+      end
+
       def assign_copilot(issue_number)
+        unless @client.check_assignee(@repo, "copilot")
+          warn "[wall-e] 'copilot' is not a valid assignee for #{@repo}. " \
+               "Ensure Copilot coding agent is enabled for the repository/org " \
+               "and the token has Issues write permission."
+          return
+        end
+
         @client.add_assignees(@repo, issue_number, ["copilot"])
       end
 

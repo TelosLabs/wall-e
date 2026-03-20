@@ -10,7 +10,8 @@ options = {
   config_path: "config/wall_e_settings.yml",
   prompt_path: ".github/prompts/wall_e_analysis.md",
   dry_run: false,
-  skip_llm: false
+  skip_llm: false,
+  max_issues: nil
 }
 
 OptionParser.new do |opts|
@@ -31,12 +32,17 @@ OptionParser.new do |opts|
   opts.on("--skip-llm", "Skip LLM triage and use raw collector findings") do
     options[:skip_llm] = true
   end
+
+  opts.on("--max-issues N", Integer, "Override max issues to create (useful for testing)") do |value|
+    options[:max_issues] = value
+  end
 end.parse!
 
 config = TechDebt::Config.load(options[:config_path])
 summary = TechDebt::Analyzer.new(config, prompt_path: options[:prompt_path]).run(
   dry_run: options[:dry_run],
-  skip_llm: options[:skip_llm]
+  skip_llm: options[:skip_llm],
+  max_issues: options[:max_issues]
 )
 
 puts JSON.pretty_generate(summary)
