@@ -190,6 +190,7 @@ Key sections:
 - `github.labels`, `github.issue_prefix`, `github.max_issues_per_run`
 - `reporting.summary_path`: JSON summary output
 - `auto_assign`: optional post-creation dispatch to Copilot or Cursor
+- `auto_assign.assign_pre_delay_seconds`: delay before each Copilot assignment (default `3`)
 
 `ai-detected` and `severity:*` labels are managed automatically by the gem. Keep `github.labels` for shared/static labels (for example `tech-debt`).
 
@@ -255,6 +256,13 @@ bundle exec wall-e [options]
 - Store the PAT in `AGENT_ASSIGN_TOKEN` as a repository or organization secret
 - The default `GITHUB_TOKEN` does not have sufficient scope for Copilot assignment
 - If you do not want auto-assignment, set `auto_assign.enabled: false` in your config
+
+**Copilot "agent encountered an error" / "repository ruleset violation"**
+
+- This usually happens when assigning Copilot to multiple issues in quick succession
+- Increase `auto_assign.assign_pre_delay_seconds` (for example `5` or `8`) to give each issue time to propagate before Copilot starts
+- If the repo has rulesets or branch protection, add Copilot coding agent as a bypass actor
+- Manual re-assignment via the GitHub UI is a workaround if the agent still fails to start
 
 ## TODO
 

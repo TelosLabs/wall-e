@@ -62,6 +62,7 @@ auto_assign:
   enabled: true
   agent: "copilot" # "copilot" | "cursor"
   token_env: "AGENT_ASSIGN_TOKEN" # if secret is not set, GITHUB_TOKEN is used
+  assign_pre_delay_seconds: 3 # delay before each Copilot assignment to avoid agent startup failures
   filters:
     min_severity: "medium" # low, medium, high
     debt_types: [] # Empty for all debt types

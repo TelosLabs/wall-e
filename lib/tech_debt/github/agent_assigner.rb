@@ -94,11 +94,17 @@ module TechDebt
       end
 
       COPILOT_ASSIGNEE = "copilot-swe-agent[bot]"
+      ASSIGN_PRE_DELAY = 3
       ASSIGN_RETRY_ATTEMPTS = 3
       ASSIGN_RETRY_BASE_DELAY = 2
 
+      def assign_pre_delay
+        @settings.fetch("assign_pre_delay_seconds", ASSIGN_PRE_DELAY).to_f
+      end
+
       def assign_copilot(issue_number)
         attempts = 0
+        sleep(assign_pre_delay)
 
         begin
           @client.add_assignees(@repo, issue_number, [COPILOT_ASSIGNEE])
