@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "octokit"
+require 'octokit'
 
 module TechDebt
   module Github
     class AgentAssigner
       SEVERITY_RANK = {
-        "low" => 0,
-        "medium" => 1,
-        "high" => 2
+        'low' => 0,
+        'medium' => 1,
+        'high' => 2
       }.freeze
 
       DEFAULT_CURSOR_PROMPT = <<~PROMPT.strip.freeze
@@ -20,11 +20,11 @@ module TechDebt
         @config = config
         raw_settings = config.auto_assign
         @settings = raw_settings.is_a?(Hash) ? raw_settings : {}
-        @repo = config.github["repo"] || ENV["GITHUB_REPOSITORY"]
-        raw_filters = @settings["filters"]
+        @repo = config.github['repo'] || ENV['GITHUB_REPOSITORY']
+        raw_filters = @settings['filters']
         @filters = raw_filters.is_a?(Hash) ? raw_filters : {}
-        @agent = @settings.fetch("agent", "copilot").to_s.downcase
-        @token_env = @settings.fetch("token_env", "AGENT_ASSIGN_TOKEN")
+        @agent = @settings.fetch('agent', 'copilot').to_s.downcase
+        @token_env = @settings.fetch('token_env', 'AGENT_ASSIGN_TOKEN')
 
         token = resolve_token
         @client = Octokit::Client.new(access_token: token)
@@ -34,9 +34,9 @@ module TechDebt
         return false unless eligible?(item)
 
         case @agent
-        when "copilot"
+        when 'copilot'
           assign_copilot(issue_number)
-        when "cursor"
+        when 'cursor'
           assign_cursor(issue_number, item)
         else
           warn "Unknown auto_assign.agent '#{@agent}', skipping assignment"
@@ -46,8 +46,8 @@ module TechDebt
         true
       rescue Octokit::NotFound => e
         warn "[wall-e] Auto-assignment failed for issue ##{issue_number}: #{e.message}. " \
-             "For Copilot: ensure coding agent is enabled for the repo/org and the token " \
-             "has Issues write + Metadata read permissions (use a PAT from a Copilot-licensed user)."
+             'For Copilot: ensure coding agent is enabled for the repo/org and the token ' \
+             'has Issues write + Metadata read permissions (use a PAT from a Copilot-licensed user).'
         false
       rescue StandardError => e
         warn "[wall-e] Auto-assignment failed for issue ##{issue_number}: #{e.class} - #{e.message}"
@@ -61,20 +61,20 @@ module TechDebt
       end
 
       def passes_severity_filter?(item)
-        item_rank = SEVERITY_RANK.fetch(item.fetch("severity").to_s.downcase, 0)
+        item_rank = SEVERITY_RANK.fetch(item.fetch('severity').to_s.downcase, 0)
         min_rank = SEVERITY_RANK.fetch(min_severity, 0)
         item_rank >= min_rank
       end
 
       def min_severity
-        @filters.fetch("min_severity", "low").to_s.downcase
+        @filters.fetch('min_severity', 'low').to_s.downcase
       end
 
       def passes_debt_type_filter?(item)
-        allowed = Array(@filters["debt_types"]).map(&:to_s)
+        allowed = Array(@filters['debt_types']).map(&:to_s)
         return true if allowed.empty?
 
-        allowed.include?(item.fetch("debt_type").to_s)
+        allowed.include?(item.fetch('debt_type').to_s)
       end
 
       def resolve_token
@@ -84,7 +84,7 @@ module TechDebt
           return explicit
         end
 
-        fallback = ENV["GITHUB_TOKEN"]
+        fallback = ENV['GITHUB_TOKEN']
         if fallback.to_s.strip.empty?
           warn "[wall-e] WARNING: Neither #{@token_env} nor GITHUB_TOKEN is set; auto-assignment will fail"
         else
@@ -93,13 +93,13 @@ module TechDebt
         fallback
       end
 
-      COPILOT_ASSIGNEE = "copilot-swe-agent[bot]"
-      ASSIGN_PRE_DELAY = 3
+      COPILOT_ASSIGNEE = 'copilot-swe-agent[bot]'
+      ASSIGN_PRE_DELAY = 5
       ASSIGN_RETRY_ATTEMPTS = 3
       ASSIGN_RETRY_BASE_DELAY = 2
 
       def assign_pre_delay
-        @settings.fetch("assign_pre_delay_seconds", ASSIGN_PRE_DELAY).to_f
+        @settings.fetch('assign_pre_delay_seconds', ASSIGN_PRE_DELAY).to_f
       end
 
       def assign_copilot(issue_number)
@@ -122,13 +122,13 @@ module TechDebt
       end
 
       def build_cursor_prompt(item)
-        base_prompt = @settings.fetch("cursor_prompt", DEFAULT_CURSOR_PROMPT).to_s.strip
-        prompt = base_prompt.start_with?("@cursor") ? base_prompt : "@cursor #{base_prompt}"
+        base_prompt = @settings.fetch('cursor_prompt', DEFAULT_CURSOR_PROMPT).to_s.strip
+        prompt = base_prompt.start_with?('@cursor') ? base_prompt : "@cursor #{base_prompt}"
 
         [
           prompt,
-          "",
-          "Context:",
+          '',
+          'Context:',
           "- debt_type: #{item.fetch('debt_type')}",
           "- severity: #{item.fetch('severity')}",
           "- file_path: #{item.fetch('file_path')}"
