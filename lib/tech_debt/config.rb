@@ -4,7 +4,10 @@ require "yaml"
 
 module TechDebt
   class Config
-    REQUIRED_KEYS = %w[version llm analysis github reporting].freeze
+    REQUIRED_KEYS = %w[version llm analysis github].freeze
+
+    SUMMARY_PATH = "tmp/wall_e_report.json"
+    DEFAULT_FLOG_THRESHOLD = 25
 
     attr_reader :raw
 
@@ -31,7 +34,11 @@ module TechDebt
     end
 
     def reporting
-      raw.fetch("reporting")
+      { "generate_summary" => true, "summary_path" => SUMMARY_PATH }
+    end
+
+    def flog_threshold
+      analysis.fetch("flog_threshold", DEFAULT_FLOG_THRESHOLD).to_f
     end
 
     def auto_assign

@@ -23,55 +23,20 @@ analysis:
     - "vendor/**"
     - "db/migrate/**"
     - "node_modules/**"
-  debt_types:
-    fat_controller: # controller-owned orchestration that should live elsewhere
-      enabled: true
-      threshold_lines: 100
-      severity: "high"
-    leaked_business_logic: # business rules living outside the domain layer (in controllers, views, helpers, jobs, or rake tasks)
-      enabled: true
-      severity: "high"
-    semantic_duplication: # functionally identical or near-identical logic in two or more locations, even if variable names or structure differ
-      enabled: true
-      similarity_threshold: 0.85
-      severity: "medium"
-    dead_code: # methods, classes, or modules that are defined but never called or referenced anywhere in the application
-      enabled: true
-      severity: "low"
-    missing_concern: # shared behavior across multiple models/controllers that should be extracted into a Rails Concern
-      enabled: true
-      severity: "medium"
-    high_complexity: # a method with deeply nested conditionals, excessive branching, or a high cyclomatic/flog complexity score
-      enabled: true
-      flog_threshold: 25
-      severity: "high"
+  flog_threshold: 25 # methods with a flog score above this are surfaced as high_complexity candidates
 
 github:
-  repo: null # if not set, GITHUB_REPOSITORY is used
+  repo: null # defaults to GITHUB_REPOSITORY env var
   labels:
     - name: "tech-debt"
       color: "d93f0b"
   issue_prefix: "[wall-e]"
   max_issues_per_run: 10
 
-reporting:
-  generate_summary: true
-  summary_path: "tmp/wall_e_report.json"
-
 auto_assign:
   enabled: true
   agent: "claude" # "copilot" | "cursor" | "opencode" | "claude"
-  token_env: "AGENT_ASSIGN_TOKEN" # if secret is not set, GITHUB_TOKEN is used
-  assign_pre_delay_seconds: 5 # delay before each Copilot assignment to avoid agent startup failures
+  token_env: "AGENT_ASSIGN_TOKEN" # falls back to GITHUB_TOKEN if not set
   filters:
-    min_severity: "medium" # low, medium, high
-    debt_types: [] # Empty for all debt types
-  claude_prompt: |
-    Analyze and fix this tech debt issue. Read the description for file path,
-    debt type, and suggested refactoring approach. Open a PR when done.
-  cursor_prompt: |
-    Analyze and fix this tech debt issue. Read the description for file path,
-    debt type, and suggested refactoring approach. Open a PR when done.
-  opencode_prompt: |
-    Analyze and fix this tech debt issue. Read the description for file path,
-    debt type, and suggested refactoring approach. Open a PR when done.
+    min_severity: "medium" # "low" | "medium" | "high"
+    debt_types: [] # empty = all debt types

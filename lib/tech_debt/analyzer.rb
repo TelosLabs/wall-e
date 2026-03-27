@@ -4,6 +4,7 @@ require "fileutils"
 require "json"
 require_relative "collectors/debride_collector"
 require_relative "collectors/complexity_collector"
+require_relative "collectors/layer_collector"
 require_relative "github/fingerprint"
 require_relative "github/agent_assigner"
 require_relative "github/issue_manager"
@@ -26,7 +27,7 @@ module TechDebt
                  end
 
       summary = process_findings(findings, dry_run: dry_run)
-      write_summary(summary) if @config.reporting["generate_summary"]
+      write_summary(summary)
       summary
     end
 
@@ -35,20 +36,20 @@ module TechDebt
     def collect_candidates
       collectors = [
         Collectors::DebrideCollector.new(@config),
-        Collectors::ComplexityCollector.new(@config)
+        Collectors::ComplexityCollector.new(@config),
+        Collectors::LayerCollector.new(@config)
       ]
 
       collectors.flat_map(&:call)
     end
 
     def candidates_to_findings(candidates)
-      severity_map = @config.analysis.fetch("debt_types", {}).transform_values { |v| v["severity"] || "medium" }
       candidates.map do |item|
         {
           "file_path" => item[:file],
           "identifier" => item[:identifier],
           "debt_type" => item[:type],
-          "severity" => severity_map.fetch(item[:type], "medium"),
+          "severity" => "medium",
           "title" => "#{item[:type].tr('_', ' ')} detected for #{item[:identifier]}",
           "description" => item[:detail],
           "suggested_refactor" => "Review and refactor this section following Rails conventions.",
@@ -109,7 +110,7 @@ module TechDebt
     end
 
     def write_summary(summary)
-      path = @config.reporting.fetch("summary_path", "tmp/wall_e_report.json")
+      path = TechDebt::Config::SUMMARY_PATH
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, JSON.pretty_generate(summary))
     end

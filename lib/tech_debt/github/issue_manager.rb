@@ -97,17 +97,11 @@ module TechDebt
 
         case debt_type
         when 'high_complexity'
-          threshold = @config.analysis.dig('debt_types', 'high_complexity', 'flog_threshold')
-          return "Complexity score: #{score}/#{threshold} threshold (higher is worse)" if threshold
-
-          "Complexity score: #{score} (higher is worse)"
+          "Complexity score: #{score}/#{@config.flog_threshold} threshold (higher is worse)"
         when 'dead_code'
           "Dead-code signal score: #{score} (binary/static detector signal, not a complexity scale)"
         when 'semantic_duplication'
-          threshold = @config.analysis.dig('debt_types', 'semantic_duplication', 'similarity_threshold')
-          return "Impact score: #{score}; similarity threshold configured at #{threshold}" if threshold
-
-          "Impact score: #{score} for duplicated behavior"
+          "Impact score: #{score} — duplicated lines across all locations"
         else
           "Impact score: #{score} (0-100 heuristic used for prioritization)"
         end

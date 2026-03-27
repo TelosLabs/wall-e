@@ -103,13 +103,9 @@ module TechDebt
       ASSIGN_RETRY_ATTEMPTS = 3
       ASSIGN_RETRY_BASE_DELAY = 2
 
-      def assign_pre_delay
-        @settings.fetch('assign_pre_delay_seconds', ASSIGN_PRE_DELAY).to_f
-      end
-
       def assign_copilot(issue_number)
         attempts = 0
-        sleep(assign_pre_delay)
+        sleep(ASSIGN_PRE_DELAY)
 
         begin
           @client.add_assignees(@repo, issue_number, [COPILOT_ASSIGNEE])
@@ -127,10 +123,7 @@ module TechDebt
       end
 
       def build_cursor_prompt(item)
-        base_prompt = @settings.fetch('cursor_prompt', DEFAULT_AGENT_COMMENT_PROMPT).to_s.strip
-        prompt = base_prompt.start_with?('@cursor') ? base_prompt : "@cursor #{base_prompt}"
-
-        agent_comment_with_context(prompt, item)
+        agent_comment_with_context("@cursor #{DEFAULT_AGENT_COMMENT_PROMPT}", item)
       end
 
       def assign_opencode(issue_number, item)
@@ -138,14 +131,7 @@ module TechDebt
       end
 
       def build_opencode_prompt(item)
-        base_prompt = @settings.fetch('opencode_prompt', DEFAULT_AGENT_COMMENT_PROMPT).to_s.strip
-        prompt = if opencode_trigger?(base_prompt)
-                   base_prompt
-                 else
-                   "/opencode #{base_prompt}"
-                 end
-
-        agent_comment_with_context(prompt, item)
+        agent_comment_with_context("/opencode #{DEFAULT_AGENT_COMMENT_PROMPT}", item)
       end
 
       def assign_claude(issue_number, item)
@@ -153,17 +139,7 @@ module TechDebt
       end
 
       def build_claude_prompt(item)
-        base_prompt = @settings.fetch('claude_prompt', DEFAULT_AGENT_COMMENT_PROMPT).to_s.strip
-        prompt = base_prompt.start_with?('@claude') ? base_prompt : "@claude #{base_prompt}"
-
-        agent_comment_with_context(prompt, item)
-      end
-
-      def opencode_trigger?(text)
-        trimmed = text.lstrip
-        return true if trimmed.match?(/\A\/opencode(?:\s|\z)/)
-
-        trimmed.match?(/\A\/oc(?:\s|\z)/)
+        agent_comment_with_context("@claude #{DEFAULT_AGENT_COMMENT_PROMPT}", item)
       end
 
       def agent_comment_with_context(prompt, item)
