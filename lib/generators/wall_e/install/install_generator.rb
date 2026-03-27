@@ -15,6 +15,11 @@ module WallE
         copy_file "wall_e_scan.yml", ".github/workflows/wall_e_scan.yml"
       end
 
+      def copy_verify_workflow
+        say "Adding PR verification workflow...", :green
+        copy_file "wall_e_verify.yml", ".github/workflows/wall_e_verify.yml"
+      end
+
       def copy_config
         say "Adding wall-e settings...", :green
         copy_file "wall_e_settings.yml", "config/wall_e_settings.yml"
@@ -23,6 +28,16 @@ module WallE
       def copy_prompt
         say "Adding semantic analysis prompt...", :green
         copy_file "wall_e_analysis.md", ".github/prompts/wall_e_analysis.md"
+      end
+
+      def copy_issue_writer_prompt
+        say "Adding issue writer prompt...", :green
+        copy_file "wall_e_issue_writer.md", ".github/prompts/wall_e_issue_writer.md"
+      end
+
+      def copy_verification_prompt
+        say "Adding PR verification prompt...", :green
+        copy_file "wall_e_verification.md", ".github/prompts/wall_e_verification.md"
       end
 
       def print_next_steps
@@ -34,10 +49,11 @@ module WallE
         say "Next steps:", :yellow
         say ""
         say "  1. Add OPENAI_API_KEY as a GitHub Actions secret"
-        say "  2. (Optional) Add AGENT_ASSIGN_TOKEN for auto-assign to Copilot/Cursor"
-        say "  3. Review .github/workflows/wall_e_scan.yml triggers"
-        say "  4. Tune config/wall_e_settings.yml thresholds if needed"
-        say "  5. Test locally:"
+        say "  2. (Optional) Add AGENT_ASSIGN_TOKEN for auto-assign (falls back to GITHUB_TOKEN)"
+        say "  3. Review .github/workflows/wall_e_scan.yml and wall_e_verify.yml triggers"
+        say "  4. Adjust analysis.paths and flog_threshold in config/wall_e_settings.yml if needed"
+        say "  5. Optional: set verification.close_on_pass in config/wall_e_settings.yml"
+        say "  6. Test locally:"
         say "     bundle exec wall-e --dry-run --skip-llm"
         say ""
       end

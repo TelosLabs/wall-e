@@ -8,12 +8,10 @@ module TechDebt
   module Collectors
     class ComplexityCollector < BaseCollector
       def call
-        return [] unless debt_type_enabled?("high_complexity")
-
         targets = target_files
         return [] if targets.empty?
 
-        threshold = config.analysis.dig("debt_types", "high_complexity", "flog_threshold").to_f
+        threshold = config.flog_threshold
         stdout, stderr, status = Open3.capture3("bundle exec flog -a #{targets.map { |path| Shellwords.escape(path) }.join(' ')}")
         output = [stdout, stderr].join("\n")
         return [] if output.strip.empty?
@@ -24,16 +22,6 @@ module TechDebt
       end
 
       private
-
-      def debt_type_enabled?(type)
-        config.analysis.dig("debt_types", type, "enabled") == true
-      end
-
-      def target_files
-        included = config.analysis.fetch("paths", []).flat_map { |pattern| Dir.glob(pattern) }
-        excluded = config.analysis.fetch("exclude_paths", []).flat_map { |pattern| Dir.glob(pattern) }
-        (included - excluded).uniq.select { |path| path.end_with?(".rb") && File.file?(path) }
-      end
 
       def parse_output(output, threshold)
         output.each_line.filter_map do |line|

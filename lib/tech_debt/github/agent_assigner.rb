@@ -11,7 +11,7 @@ module TechDebt
         'high' => 2
       }.freeze
 
-      DEFAULT_CURSOR_PROMPT = <<~PROMPT.strip.freeze
+      DEFAULT_AGENT_COMMENT_PROMPT = <<~PROMPT.strip.freeze
         Analyze and fix this tech debt issue. Read the description for file path,
         debt type, and suggested refactoring approach. Open a PR when done.
       PROMPT
@@ -38,6 +38,10 @@ module TechDebt
           assign_copilot(issue_number)
         when 'cursor'
           assign_cursor(issue_number, item)
+        when 'opencode'
+          assign_opencode(issue_number, item)
+        when 'claude'
+          assign_claude(issue_number, item)
         else
           warn "Unknown auto_assign.agent '#{@agent}', skipping assignment"
           return false
@@ -47,7 +51,8 @@ module TechDebt
       rescue Octokit::NotFound => e
         warn "[wall-e] Auto-assignment failed for issue ##{issue_number}: #{e.message}. " \
              'For Copilot: ensure coding agent is enabled for the repo/org and the token ' \
-             'has Issues write + Metadata read permissions (use a PAT from a Copilot-licensed user).'
+             'has Issues write + Metadata read permissions (use a PAT from a Copilot-licensed user). ' \
+             'For Cursor/OpenCode/Claude comments: confirm the token can create issue comments.'
         false
       rescue StandardError => e
         warn "[wall-e] Auto-assignment failed for issue ##{issue_number}: #{e.class} - #{e.message}"
@@ -98,13 +103,9 @@ module TechDebt
       ASSIGN_RETRY_ATTEMPTS = 3
       ASSIGN_RETRY_BASE_DELAY = 2
 
-      def assign_pre_delay
-        @settings.fetch('assign_pre_delay_seconds', ASSIGN_PRE_DELAY).to_f
-      end
-
       def assign_copilot(issue_number)
         attempts = 0
-        sleep(assign_pre_delay)
+        sleep(ASSIGN_PRE_DELAY)
 
         begin
           @client.add_assignees(@repo, issue_number, [COPILOT_ASSIGNEE])
@@ -118,15 +119,34 @@ module TechDebt
       end
 
       def assign_cursor(issue_number, item)
-        @client.add_comment(@repo, issue_number, build_cursor_prompt(item))
+        @client.add_comment(@repo, issue_number, build_cursor_prompt(item, issue_number))
       end
 
-      def build_cursor_prompt(item)
-        base_prompt = @settings.fetch('cursor_prompt', DEFAULT_CURSOR_PROMPT).to_s.strip
-        prompt = base_prompt.start_with?('@cursor') ? base_prompt : "@cursor #{base_prompt}"
+      def build_cursor_prompt(item, issue_number)
+        agent_comment_with_context("@cursor #{DEFAULT_AGENT_COMMENT_PROMPT}", item, issue_number: issue_number)
+      end
 
+      def assign_opencode(issue_number, item)
+        @client.add_comment(@repo, issue_number, build_opencode_prompt(item, issue_number))
+      end
+
+      def build_opencode_prompt(item, issue_number)
+        agent_comment_with_context("/opencode #{DEFAULT_AGENT_COMMENT_PROMPT}", item, issue_number: issue_number)
+      end
+
+      def assign_claude(issue_number, item)
+        @client.add_comment(@repo, issue_number, build_claude_prompt(item, issue_number))
+      end
+
+      def build_claude_prompt(item, issue_number)
+        agent_comment_with_context("@claude #{DEFAULT_AGENT_COMMENT_PROMPT}", item, issue_number: issue_number)
+      end
+
+      def agent_comment_with_context(prompt, item, issue_number:)
         [
           prompt,
+          '',
+          "Fixes ##{issue_number}",
           '',
           'Context:',
           "- debt_type: #{item.fetch('debt_type')}",

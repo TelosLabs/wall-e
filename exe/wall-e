@@ -6,12 +6,18 @@ require "json"
 require "tech_debt/config"
 require "tech_debt/analyzer"
 
+DEFAULT_ISSUE_WRITER = ".github/prompts/wall_e_issue_writer.md"
+DEFAULT_VERIFICATION_PROMPT = ".github/prompts/wall_e_verification.md"
+
 options = {
   config_path: "config/wall_e_settings.yml",
   prompt_path: ".github/prompts/wall_e_analysis.md",
+  issue_writer_prompt_path: DEFAULT_ISSUE_WRITER,
+  verification_prompt_path: DEFAULT_VERIFICATION_PROMPT,
   dry_run: false,
   skip_llm: false,
-  max_issues: nil
+  max_issues: nil,
+  verify_pr: nil
 }
 
 OptionParser.new do |opts|
@@ -25,7 +31,15 @@ OptionParser.new do |opts|
     options[:prompt_path] = value
   end
 
-  opts.on("--dry-run", "Run analysis but skip GitHub API issue operations") do
+  opts.on("--issue-writer-prompt PATH", "Path to issue writer prompt (default: #{DEFAULT_ISSUE_WRITER})") do |value|
+    options[:issue_writer_prompt_path] = value
+  end
+
+  opts.on("--verification-prompt PATH", "Path to PR verification prompt (default: #{DEFAULT_VERIFICATION_PROMPT})") do |value|
+    options[:verification_prompt_path] = value
+  end
+
+  opts.on("--dry-run", "Run analysis but skip GitHub API issue operations; for --verify-pr, skip PR comment/issue close") do
     options[:dry_run] = true
   end
 
@@ -36,13 +50,43 @@ OptionParser.new do |opts|
   opts.on("--max-issues N", Integer, "Override max issues to create (useful for testing)") do |value|
     options[:max_issues] = value
   end
+
+  opts.on("--verify-pr NUMBER", Integer, "Verify a PR against linked wall-e issues (skips normal scan)") do |value|
+    options[:verify_pr] = value
+  end
 end.parse!
 
 config = TechDebt::Config.load(options[:config_path])
-summary = TechDebt::Analyzer.new(config, prompt_path: options[:prompt_path]).run(
-  dry_run: options[:dry_run],
-  skip_llm: options[:skip_llm],
-  max_issues: options[:max_issues]
-)
 
-puts JSON.pretty_generate(summary)
+if options[:verify_pr]
+  require "tech_debt/verification/pr_verifier"
+  begin
+    summary = TechDebt::Verification::PrVerifier.new(
+      config,
+      pr_number: options[:verify_pr],
+      verification_prompt_path: options[:verification_prompt_path],
+      dry_run: options[:dry_run]
+    ).run
+  rescue Octokit::NotFound => e
+    warn "[wall-e] #{e.message}"
+    exit 1
+  rescue ArgumentError => e
+    warn "[wall-e] #{e.message}"
+    exit 1
+  end
+
+  puts JSON.pretty_generate(summary)
+  exit 1 if summary["status"] == "error"
+else
+  summary = TechDebt::Analyzer.new(
+    config,
+    prompt_path: options[:prompt_path],
+    issue_writer_prompt_path: options[:issue_writer_prompt_path]
+  ).run(
+    dry_run: options[:dry_run],
+    skip_llm: options[:skip_llm],
+    max_issues: options[:max_issues]
+  )
+
+  puts JSON.pretty_generate(summary)
+end

@@ -4,16 +4,19 @@ require "fileutils"
 require "json"
 require_relative "collectors/debride_collector"
 require_relative "collectors/complexity_collector"
+require_relative "collectors/layer_collector"
 require_relative "github/fingerprint"
 require_relative "github/agent_assigner"
 require_relative "github/issue_manager"
+require_relative "semantic/issue_writer"
 require_relative "semantic/triage"
 
 module TechDebt
   class Analyzer
-    def initialize(config, prompt_path:)
+    def initialize(config, prompt_path:, issue_writer_prompt_path: ".github/prompts/wall_e_issue_writer.md")
       @config = config
       @prompt_path = prompt_path
+      @issue_writer_prompt_path = issue_writer_prompt_path
     end
 
     def run(dry_run: false, skip_llm: false, max_issues: nil)
@@ -25,8 +28,11 @@ module TechDebt
                    Semantic::Triage.new(@config, prompt_path: @prompt_path).call(candidates)
                  end
 
+      findings = Semantic::IssueWriter.new(@config, prompt_path: @issue_writer_prompt_path).call(findings) unless skip_llm
+      findings.each { |item| normalize_verification_fields!(item) }
+
       summary = process_findings(findings, dry_run: dry_run)
-      write_summary(summary) if @config.reporting["generate_summary"]
+      write_summary(summary)
       summary
     end
 
@@ -35,26 +41,75 @@ module TechDebt
     def collect_candidates
       collectors = [
         Collectors::DebrideCollector.new(@config),
-        Collectors::ComplexityCollector.new(@config)
+        Collectors::ComplexityCollector.new(@config),
+        Collectors::LayerCollector.new(@config)
       ]
 
       collectors.flat_map(&:call)
     end
 
     def candidates_to_findings(candidates)
-      severity_map = @config.analysis.fetch("debt_types", {}).transform_values { |v| v["severity"] || "medium" }
       candidates.map do |item|
+        debt_type = item[:type].to_s
+        score = item[:score]
+        baseline_metrics = skip_llm_baseline_metrics(debt_type, score)
         {
           "file_path" => item[:file],
           "identifier" => item[:identifier],
-          "debt_type" => item[:type],
-          "severity" => severity_map.fetch(item[:type], "medium"),
-          "title" => "#{item[:type].tr('_', ' ')} detected for #{item[:identifier]}",
+          "debt_type" => debt_type,
+          "severity" => "medium",
+          "title" => "#{debt_type.tr('_', ' ')} detected for #{item[:identifier]}",
           "description" => item[:detail],
           "suggested_refactor" => "Review and refactor this section following Rails conventions.",
           "canonical_pattern" => nil,
-          "score" => item[:score]
+          "score" => score,
+          "acceptance_criteria" => [],
+          "baseline_metrics" => baseline_metrics
         }
+      end
+    end
+
+    def skip_llm_baseline_metrics(debt_type, score)
+      case debt_type
+      when "high_complexity"
+        { "flog_score" => score.to_f }
+      when "dead_code"
+        { "method_present" => true }
+      when "leaked_business_logic"
+        { "pattern_present" => true }
+      else
+        {}
+      end
+    end
+
+    def normalize_verification_fields!(item)
+      item["acceptance_criteria"] = Array(item["acceptance_criteria"]).map(&:to_s).map(&:strip).reject(&:empty?)
+      unless item["baseline_metrics"].is_a?(Hash) && item["baseline_metrics"].any?
+        item["baseline_metrics"] = infer_baseline_metrics(item)
+      end
+      item["baseline_metrics"] = {} unless item["baseline_metrics"].is_a?(Hash)
+      return if item["acceptance_criteria"].any?
+
+      item["acceptance_criteria"] = [fallback_acceptance_criterion(item)]
+    end
+
+    def fallback_acceptance_criterion(item)
+      "Debt type `#{item.fetch('debt_type')}` for `#{item.fetch('identifier')}` in `#{item.fetch('file_path')}` is fully addressed in the PR without relocating the problem."
+    end
+
+    def infer_baseline_metrics(item)
+      existing = item["baseline_metrics"]
+      return existing if existing.is_a?(Hash) && existing.any?
+
+      case item.fetch("debt_type").to_s
+      when "high_complexity"
+        { "flog_score" => item.fetch("score", 0).to_f }
+      when "dead_code"
+        { "method_present" => true }
+      when "leaked_business_logic"
+        { "pattern_present" => true }
+      else
+        {}
       end
     end
 
@@ -109,7 +164,7 @@ module TechDebt
     end
 
     def write_summary(summary)
-      path = @config.reporting.fetch("summary_path", "tmp/wall_e_report.json")
+      path = TechDebt::Config::SUMMARY_PATH
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, JSON.pretty_generate(summary))
     end

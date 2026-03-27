@@ -8,8 +8,6 @@ module TechDebt
   module Collectors
     class DebrideCollector < BaseCollector
       def call
-        return [] unless debt_type_enabled?("dead_code")
-
         targets = target_files
         return [] if targets.empty?
 
@@ -23,16 +21,6 @@ module TechDebt
       end
 
       private
-
-      def debt_type_enabled?(type)
-        config.analysis.dig("debt_types", type, "enabled") == true
-      end
-
-      def target_files
-        included = config.analysis.fetch("paths", []).flat_map { |pattern| Dir.glob(pattern) }
-        excluded = config.analysis.fetch("exclude_paths", []).flat_map { |pattern| Dir.glob(pattern) }
-        (included - excluded).uniq.select { |path| path.end_with?(".rb") && File.file?(path) }
-      end
 
       def parse_output(output)
         output.each_line.filter_map do |line|
