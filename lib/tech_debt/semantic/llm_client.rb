@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "openai"
 require "faraday"
 
@@ -13,24 +14,101 @@ module TechDebt
       def triage(system_prompt:, user_prompt:)
         key = ENV.fetch(@config.llm.fetch("api_key_env", "OPENAI_API_KEY"))
         client = OpenAI::Client.new(access_token: key)
+        params = build_chat_parameters(system_prompt, user_prompt)
         response = with_rate_limit_retries do
-          client.chat(
-            parameters: {
-              model: @config.llm.fetch("model"),
-              temperature: @config.llm.fetch("temperature", 0.2),
-              max_tokens: @config.llm.fetch("max_tokens", 4096),
-              messages: [
-                { role: "system", content: system_prompt },
-                { role: "user", content: user_prompt }
-              ]
-            }
-          )
+          client.chat(parameters: params)
         end
 
         extract_content(response)
+      rescue Faraday::BadRequestError => e
+        warn "[wall-e] #{format_openai_client_error(e)}"
+        raise
       end
 
       private
+
+      def build_chat_parameters(system_prompt, user_prompt)
+        llm = @config.llm
+        model = llm.fetch("model")
+        params = {
+          model: model,
+          messages: [
+            { role: "system", content: system_prompt },
+            { role: "user", content: user_prompt }
+          ]
+        }
+
+        apply_openai_output_token_param!(params, llm, model)
+        apply_openai_temperature_param!(params, llm, model)
+
+        params
+      end
+
+      # GPT-5 family chat models typically expect max_completion_tokens, not max_tokens, and may
+      # reject custom temperature unless the API allows it.
+      def gpt5_family_chat_model?(model)
+        model.to_s.downcase.start_with?("gpt-5")
+      end
+
+      def apply_openai_output_token_param!(params, llm, model)
+        if llm.key?("max_completion_tokens") && !llm["max_completion_tokens"].nil?
+          params[:max_completion_tokens] = llm["max_completion_tokens"].to_i
+        elsif gpt5_family_chat_model?(model)
+          params[:max_completion_tokens] = llm.fetch("max_tokens", 4096).to_i
+        else
+          params[:max_tokens] = llm.fetch("max_tokens", 4096).to_i
+        end
+      end
+
+      def apply_openai_temperature_param!(params, llm, model)
+        if llm.key?("omit_temperature")
+          params[:temperature] = llm.fetch("temperature", 0.2).to_f unless llm["omit_temperature"]
+        elsif !gpt5_family_chat_model?(model)
+          params[:temperature] = llm.fetch("temperature", 0.2).to_f
+        end
+      end
+
+      def format_openai_client_error(error)
+        prefix = "OpenAI API rejected the request (HTTP 400)."
+        raw = extract_faraday_response_body(error.response)
+        detail = extract_openai_error_message(raw)
+        detail ? "#{prefix} #{detail}" : "#{prefix} #{error.message}"
+      end
+
+      def extract_faraday_response_body(response)
+        return nil unless response
+
+        if response.respond_to?(:body) && !response.body.nil?
+          return response.body
+        end
+
+        response[:body] if response.respond_to?(:[])
+      end
+
+      def extract_openai_error_message(raw)
+        return nil if raw.nil?
+
+        data =
+          case raw
+          when String
+            JSON.parse(raw)
+          when Hash
+            raw
+          else
+            nil
+          end
+        return data if data.is_a?(String) && !data.empty?
+
+        return nil unless data.is_a?(Hash)
+
+        err = data["error"]
+        return err["message"] if err.is_a?(Hash) && err["message"]
+        return err.to_s if err
+
+        nil
+      rescue JSON::ParserError, TypeError
+        raw.is_a?(String) ? raw : nil
+      end
 
       def with_rate_limit_retries
         attempts = 0

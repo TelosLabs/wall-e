@@ -225,7 +225,9 @@ Main settings are in `config/wall_e_settings.yml`.
 
 Key sections:
 
-- `llm`: model, API key env name, temperature, token budget (semantic triage is **OpenAI-only** today; `provider` is not yet used)
+- `llm`: model, API key env name, temperature, token budget (semantic triage is **OpenAI-only** today; `provider` is not yet used). Use a **real** Chat Completions model id; invalid ids return HTTP 400.
+- `llm.max_completion_tokens`: optional; when set, sent instead of `max_tokens`. For models whose id starts with **`gpt-5`**, wall-e sends **`max_completion_tokens`** automatically (value taken from **`max_tokens`** unless you set **`max_completion_tokens`** explicitly).
+- `llm.omit_temperature`: when `true`, temperature is not sent. For **`gpt-5`*** models, temperature is omitted by default; set **`omit_temperature: false`** if you need to send **`temperature`** and your model allows it.
 - `llm.retry_attempts` and `llm.retry_base_delay_seconds`: exponential backoff for OpenAI 429s
 - `llm.batch_size` and `llm.inter_batch_delay_seconds`: split semantic triage into smaller LLM calls
 - `analysis.paths` and `analysis.exclude_paths`: scan scope
@@ -290,7 +292,14 @@ bundle exec wall-e [options]
 **LLM / OpenAI errors**
 
 - Semantic triage calls **OpenAI only**; verify `OPENAI_API_KEY` is present in repository secrets
-- Confirm `llm.model` is a valid OpenAI model for your account/project
+- Confirm `llm.model` is a valid **Chat Completions** model for your account (for example `gpt-4o`, `gpt-4o-mini`). A placeholder or unreleased name causes **HTTP 400**; wall-e logs the API error message when that happens.
+
+**OpenAI `400 Bad Request` on chat/completions**
+
+- Set `llm.model` to a model your key supports on `/v1/chat/completions`.
+- For **`gpt-5.4-mini`** and other ids starting with **`gpt-5`**, wall-e already maps **`max_tokens`** → **`max_completion_tokens`** and skips **`temperature`** unless you set **`omit_temperature: false`**. If you still see 400, set an explicit **`max_completion_tokens`** cap or check the logged API **`error.message`**.
+- For other models, if the error mentions **temperature**, set `llm.omit_temperature: true`.
+- If the error mentions **max_tokens** / **max_completion_tokens**, set `llm.max_completion_tokens` (wall-e sends only that key when it is set).
 
 **OpenAI 429 rate limits**
 

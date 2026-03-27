@@ -2,14 +2,20 @@ version: 1
 
 llm:
   provider: "openai"
-  model: "gpt-5"
+  # Chat Completions model id your key supports (e.g. gpt-4o, gpt-4o-mini, gpt-5.4-mini).
+  # For models named gpt-5*, wall-e sends max_completion_tokens (from max_tokens below) and omits
+  # temperature unless you set omit_temperature: false.
+  model: "gpt-4o"
   api_key_env: "OPENAI_API_KEY"
-  max_tokens: 16384
+  max_tokens: 8192
   temperature: 0.2
   retry_attempts: 3
   retry_base_delay_seconds: 1.0
   batch_size: 15
   inter_batch_delay_seconds: 2.0
+  # Optional overrides (any model):
+  # max_completion_tokens: 8192
+  # omit_temperature: true
 
 analysis:
   paths:
