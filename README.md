@@ -37,6 +37,19 @@ Running the install generator adds these project files:
 - GitHub repository with Actions enabled
 - **OpenAI API key** (required for semantic triage; not required when using `--skip-llm`)
 
+### Provider setup for issue auto-assignment
+
+If you enable **`auto_assign`** in `config/wall_e_settings.yml`, wall-e will assign Copilot to the issue or post a trigger comment (`@cursor`, `/opencode`, `@claude`). **That alone does not run the agent** — you still need the provider’s GitHub app, permissions, workflows, and API keys configured per their documentation.
+
+| `auto_assign.agent` | Where to set up the integration |
+| ------------------- | ------------------------------- |
+| `copilot` | [GitHub Copilot documentation](https://docs.github.com/en/copilot) — enable **Copilot coding agent** for the org/repo and meet licensing; [quickstart](https://docs.github.com/en/copilot/get-started/quickstart) |
+| `cursor` | [GitHub integration](https://cursor.com/docs/integrations/github) (Cursor Docs) — install the app, connect the repo, and ensure `@cursor` on issues is supported for your plan |
+| `opencode` | [OpenCode on GitHub](https://opencode.ai/docs/github/) — separate workflow that reacts to `/opencode` (or similar) on issues |
+| `claude` | [Claude Code GitHub Actions](https://code.claude.com/docs/en/github-actions) — install the [Claude GitHub app](https://github.com/apps/claude), add `ANTHROPIC_API_KEY`, and add a workflow so `@claude` on issues actually runs Claude Code |
+
+Use the sections below for wall-e-specific token and behavior notes after the provider is working.
+
 ## Installation
 
 ### 1) Add the gem
@@ -80,6 +93,34 @@ Optional (recommended if you enable auto-assignment or agent-style issue comment
 6. Search GitHub Issues for existing fingerprints.
 7. Create only new issues (idempotent behavior). Each body includes a **Verification Criteria** section and a hidden `wall_e_verification` JSON blob for PR checks.
 8. Optionally auto-assign or post an agent trigger comment that includes **`Fixes #N`** so the fixing PR links to the issue.
+
+### Closed-loop flow
+
+Three static passes feed **AI triage**; each finding becomes a **GitHub issue** ready to verify. After **assign agent** and **open PR**, **verify** runs quick checks first and only then a narrow AI review when the answer is still unclear. **Outcome** is posted on the PR (pass, partial, or fail).
+
+```mermaid
+flowchart LR
+  U((Unused code)) --> T((AI triage))
+  H((Complexity)) --> T
+  B((Boundaries)) --> T
+  T --> I((GitHub issue))
+  I --> A((Assign agent))
+  A --> P((Open PR))
+  P --> V((Verify))
+  V --> O((Outcome))
+```
+
+| Step | Meaning |
+| ---- | ------- |
+| **Unused code** | Signals that look like dead or unreachable paths. |
+| **Complexity** | Hot spots where methods are doing too much work. |
+| **Boundaries** | Hints that logic may sit in the wrong layer of the app. |
+| **AI triage** | The model confirms, merges, or rejects signals and turns them into findings. |
+| **GitHub issue** | Each finding becomes a tracked issue—with clear “how we’ll know it’s fixed.” |
+| **Assign agent** | Copilot, Cursor, OpenCode, Claude, or your process picks up the thread (the PR links back via the issue). |
+| **Open PR** | The fix ships as a pull request tied to that issue. |
+| **Verify** | The pipeline re-checks the changed code; cheap tools first, focused AI only if still unclear. |
+| **Outcome** | Pass, partial, or fail is posted on the PR—the loop closes visibly for the team. |
 
 ### Triage priorities
 
@@ -194,28 +235,25 @@ Recommended setup:
 
 ### Copilot setup
 
-- Enable Copilot coding agent for the repository/org.
-- Create a PAT from a Copilot-licensed user with minimal permissions (Issues write + Metadata read).
-- Store PAT in `AGENT_ASSIGN_TOKEN`.
+1. Enable and use **Copilot coding agent** per [GitHub Copilot documentation](https://docs.github.com/en/copilot) and the [quickstart](https://docs.github.com/en/copilot/get-started/quickstart) (org/repo settings, licensing, and agent availability).
+2. wall-e–specific: use a PAT from a Copilot-licensed user with minimal permissions (Issues write + Metadata read) in `AGENT_ASSIGN_TOKEN` if `GITHUB_TOKEN` is not enough for assignment.
 
 ### Cursor setup
 
-- Install the Cursor GitHub App on the org/repo.
-- Use a PAT from a Cursor team user in `AGENT_ASSIGN_TOKEN`.
-- The instruction text in the issue comment is built into the gem; extend behavior via your Cursor/GitHub automation if you need custom wording.
+1. Complete Cursor’s GitHub integration: [GitHub integration](https://cursor.com/docs/integrations/github) (install the app, connect repos, confirm `@cursor` on issues/PRs works for your org).
+2. wall-e–specific: use a PAT from a Cursor team user in `AGENT_ASSIGN_TOKEN` if needed. The instruction text in the issue comment is built into the gem; extend behavior via your Cursor automation if you need custom wording.
 
 ### Claude setup
 
-- Use `agent: "claude"` when your workflow listens for `@claude` on issue comments (for example Claude Code integrations on GitHub).
-- Ensure `AGENT_ASSIGN_TOKEN` or `GITHUB_TOKEN` can create issue comments on the repository.
+1. Complete Anthropic’s setup so `@claude` on issues runs Claude Code — not just a bare comment: [Claude Code GitHub Actions](https://code.claude.com/docs/en/github-actions) (GitHub app, `ANTHROPIC_API_KEY`, workflow from [claude-code-action](https://github.com/anthropics/claude-code-action), etc.).
+2. wall-e–specific: ensure `AGENT_ASSIGN_TOKEN` or `GITHUB_TOKEN` can create issue comments so the scan job can post `@claude` with **`Fixes #N`** and context.
 
 ### OpenCode setup
 
-OpenCode runs in **its own** GitHub Actions workflow when a matching comment appears (for example `/opencode` or `/oc`). wall-e only **creates that comment** on new issues; it does not install or run OpenCode for you.
+OpenCode runs in **its own** GitHub Actions workflow when a matching comment appears. wall-e only **creates that comment** on new issues; it does not install OpenCode for you.
 
-- Follow [OpenCode’s GitHub documentation](https://opencode.ai/docs/github/) to install the GitHub app, add the OpenCode workflow (for example `issue_comment` triggers), and configure model/API keys **on that workflow** (for example `ANTHROPIC_API_KEY`).
-- Set `auto_assign.agent` to `opencode`. wall-e prefixes the comment with `/opencode` plus the built-in instruction block.
-- Use `AGENT_ASSIGN_TOKEN` (or a token with permission to create issue comments) so the scan job can post the trigger comment.
+1. Follow [OpenCode on GitHub](https://opencode.ai/docs/github/) to install the app, add the OpenCode workflow (for example `issue_comment` triggers), and configure model/API keys on **that** workflow.
+2. wall-e–specific: set `auto_assign.agent` to `opencode`. wall-e prefixes the comment with `/opencode` plus the built-in instruction block. Use `AGENT_ASSIGN_TOKEN` (or a token with permission to create issue comments) so the scan job can post the trigger comment.
 
 Assignment is best-effort: if assignment fails, issue creation still succeeds.
 
