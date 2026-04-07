@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "set"
 require "shellwords"
 require_relative "base_collector"
 
@@ -62,7 +63,7 @@ module TechDebt
         locations = extract_locations(lines)
         return [] if locations.empty?
 
-        in_scope, out_of_scope = locations.partition do |loc|
+        in_scope = locations.select do |loc|
           target_set.include?(File.expand_path(loc[:file]))
         end
 

@@ -18,6 +18,13 @@ RSpec.describe TechDebt::Collectors::FlayCollector do
   let(:files) { ["app/models/order.rb", "app/models/invoice.rb"] }
 
   describe "#call" do
+    # Stub target_files so File.file? checks against non-existent paths don't
+    # filter everything out. The explicit `files:` constructor arg sets
+    # @explicit_files, but BaseCollector#target_files still calls File.file?.
+    before do
+      allow(collector).to receive(:target_files).and_return(files)
+    end
+
     context "when flay finds no output" do
       before do
         allow(Open3).to receive(:capture3).and_return(["", "", double(success?: true, exitstatus: 0)])
@@ -30,6 +37,11 @@ RSpec.describe TechDebt::Collectors::FlayCollector do
 
     context "when the file list is empty" do
       let(:files) { [] }
+
+      # Override the describe-level stub: empty files should short-circuit.
+      before do
+        allow(collector).to receive(:target_files).and_return([])
+      end
 
       it "returns an empty array without calling flay" do
         expect(Open3).not_to receive(:capture3)
@@ -51,7 +63,6 @@ RSpec.describe TechDebt::Collectors::FlayCollector do
 
       before do
         allow(Open3).to receive(:capture3).and_return([flay_output, "", double(success?: true, exitstatus: 0)])
-        allow(File).to receive(:expand_path).and_wrap_original { |m, p| m.call(p) }
       end
 
       it "emits one candidate per in-scope file" do
