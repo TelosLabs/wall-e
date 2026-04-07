@@ -123,6 +123,7 @@ Do not invent new debt types. Map these risks into existing types with clear rat
 | `fat_controller` | A controller action or class that contains business logic, data transformation, or orchestration that belongs in a service/model. | Action > 15 lines of non-routing logic; controller doing work beyond params/auth/render; god-object controller with mixed responsibilities. |
 | `leaked_business_logic` | Business rules living outside the domain layer (controllers, views, helpers, jobs, rake tasks) OR domain logic leaked into services that belongs in models. | Calculations, state transitions, validations, or policy checks outside models; operation callbacks on models; `Current.*` in models or jobs; anemic model risk where services hold all domain logic. |
 | `semantic_duplication` | Functionally identical or near-identical logic in two or more locations, even if variable names or structure differ. | Two code paths achieving the same business outcome (e.g., discount calculation in both `OrderService` and `InvoiceService`). |
+| `structural_duplication` | AST-identical or near-identical code blocks detected by static analysis (flay). The candidate input will include match type (IDENTICAL/Similar), flay mass score, and peer file locations. | Confirm whether the duplication is meaningful business logic vs. boilerplate or framework convention. If the duplication is significant, provide a `canonical_pattern`. Dismiss if the matched blocks are short framework patterns (e.g., identical `before_action` callbacks, standard `belongs_to` declarations). May be reclassified to `semantic_duplication` when the intent overlap is clearly business logic. |
 | `missing_concern` | Shared behavior across multiple models/controllers that should be extracted into a behavioral Rails Concern -- OR -- code-slicing concerns that should be refactored. | Same callback pattern, scope, or method group copy-pasted across 2+ classes; concerns that group by artifact type rather than behavior. |
 | `dead_code` | Methods, classes, or modules defined but never called or referenced anywhere in the application; anemic jobs that add no logic over direct model delegation. | Confirmed by static analysis AND code inspection -- not just unused by one caller. |
 | `high_complexity` | A method with deeply nested conditionals, excessive branching, or a high cyclomatic/flog complexity score; god objects with mixed responsibilities. | Flog score above the configured threshold, or clearly unreadable control flow. |
@@ -141,13 +142,13 @@ The `score` field is a **numeric impact estimate** (0-100):
 
 - For `high_complexity`: use the flog score directly from the candidate input.
 - For `fat_controller` / `leaked_business_logic`: estimate as lines of misplaced logic.
-- For `semantic_duplication`: estimate as the number of duplicated lines across all locations.
+- For `semantic_duplication` / `structural_duplication`: use the flay mass score from the candidate input, or estimate as the number of duplicated lines across all locations.
 - For `dead_code`: set to the number of dead lines/methods.
 - For `missing_concern`: estimate as lines of duplicated concern-worthy code.
 
 # canonical_pattern (Semantic Duplication Only)
 
-When `debt_type` is `semantic_duplication`, you MUST provide a `canonical_pattern` -- a stable, descriptive, snake_case slug that identifies the shared behavior independent of file paths or variable names.
+When `debt_type` is `semantic_duplication` or `structural_duplication` (confirmed as meaningful), you MUST provide a `canonical_pattern` -- a stable, descriptive, snake_case slug that identifies the shared behavior independent of file paths or variable names.
 
 Examples:
 - `percentage_based_discount_calculation`

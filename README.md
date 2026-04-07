@@ -2,7 +2,7 @@
 
 AI-powered semantic tech debt scanning for Ruby on Rails applications.
 
-`wall-e` helps teams detect and track architectural debt that linters usually miss: duplicated business logic, leaked domain rules, dead code, and complexity hotspots. It runs in GitHub Actions, triages findings with an LLM, enriches issue text for verification, and creates deduplicated GitHub Issues using deterministic fingerprints. Optional **PR verification** (`--verify-pr` or a dedicated workflow) checks linked issues against the PR diff using static tools first and a focused LLM only when needed.
+`wall-e` helps teams detect and track architectural debt that linters usually miss: structurally duplicated code blocks, duplicated business logic, leaked domain rules, dead code, and complexity hotspots. It runs in GitHub Actions, triages findings with an LLM, enriches issue text for verification, and creates deduplicated GitHub Issues using deterministic fingerprints. Optional **PR verification** (`--verify-pr` or a dedicated workflow) checks linked issues against the PR diff using static tools first and a focused LLM only when needed.
 
 **Semantic triage (default scan path) uses the OpenAI Chat Completions API** via the `ruby-openai` gem. Settings such as `llm.provider` in `config/wall_e_settings.yml` are reserved for future multi-provider support and are not honored today. To run without any LLM calls, use `--skip-llm` (static collectors only).
 
@@ -11,11 +11,12 @@ AI-powered semantic tech debt scanning for Ruby on Rails applications.
 Traditional static analysis catches syntax and style problems. It usually does not catch semantic debt such as:
 
 - Controller actions with embedded business workflows
+- Structurally identical or near-identical code blocks copy-pasted across files
 - Similar business rules duplicated across different domains
 - Logic that should be extracted into concerns/services/query objects
 - Uncalled methods and high-complexity methods that increase maintenance cost
 
-This gem combines static signals (`debride`, `flog`) plus LLM triage so you get fewer noisy alerts and more actionable refactor tasks.
+This gem combines static signals (`debride`, `flog`, `flay`) plus LLM triage so you get fewer noisy alerts and more actionable refactor tasks.
 
 ## What gets installed
 
@@ -85,7 +86,7 @@ Optional (recommended if you enable auto-assignment or agent-style issue comment
 
 ## How it works
 
-1. Collect static candidates from dead-code, complexity, and layer-violation signals.
+1. Collect static candidates from dead-code, complexity, structural duplication, and layer-violation signals.
 2. Read code snippets for candidate files.
 3. Send candidates + snippets to **OpenAI** for semantic triage with Rails-focused risk checks.
 4. Run a second batched **issue writer** call (unless `--skip-llm`) to add `acceptance_criteria`, `baseline_metrics`, and tightened wording.
@@ -102,6 +103,7 @@ Three static passes feed **AI triage**; each finding becomes a **GitHub issue** 
 flowchart LR
   U((Unused code)) --> T((AI triage))
   H((Complexity)) --> T
+  D((Duplication)) --> T
   B((Boundaries)) --> T
   T --> I((GitHub issue))
   I --> A((Assign agent))
@@ -114,6 +116,7 @@ flowchart LR
 | ---- | ------- |
 | **Unused code** | Signals that look like dead or unreachable paths. |
 | **Complexity** | Hot spots where methods are doing too much work. |
+| **Duplication** | Structurally identical or near-identical code blocks across files (AST-level, via flay). |
 | **Boundaries** | Hints that logic may sit in the wrong layer of the app. |
 | **AI triage** | The model confirms, merges, or rejects signals and turns them into findings. |
 | **GitHub issue** | Each finding becomes a tracked issue—with clear “how we’ll know it’s fixed.” |
@@ -131,7 +134,7 @@ The default prompt prioritizes high-impact Rails risks when they appear in scann
 - Unvalidated LLM output crossing trust boundaries
 - Enum/status completeness gaps across branches/allowlists
 
-These are still emitted using the existing debt taxonomy (`fat_controller`, `leaked_business_logic`, `semantic_duplication`, `missing_concern`, `dead_code`, `high_complexity`) to keep output stable.
+These are still emitted using the existing debt taxonomy (`fat_controller`, `leaked_business_logic`, `semantic_duplication`, `structural_duplication`, `missing_concern`, `dead_code`, `high_complexity`) to keep output stable.
 
 ## Fingerprinting and deduplication
 
@@ -165,7 +168,7 @@ Runs analysis and prints what would be created without calling the GitHub Issues
 bundle exec wall-e --dry-run --skip-llm
 ```
 
-Uses only static collectors (`debride`, `flog`, layer checks) and skips semantic triage and the issue writer. Findings still carry default `baseline_metrics` for verification metadata.
+Uses only static collectors (`debride`, `flog`, `flay`, layer checks) and skips semantic triage and the issue writer. Findings still carry default `baseline_metrics` for verification metadata.
 
 ### PR verification (`--verify-pr`)
 
@@ -269,6 +272,7 @@ Key sections:
 - `llm.retry_attempts` and `llm.retry_base_delay_seconds`: exponential backoff for OpenAI 429s
 - `llm.batch_size` and `llm.inter_batch_delay_seconds`: split semantic triage into smaller LLM calls
 - `analysis.paths` and `analysis.exclude_paths`: scan scope
+- `analysis.flog_threshold` and `analysis.flay_threshold`: complexity and structural duplication thresholds
 - `analysis.debt_types`: per-debt toggles and thresholds
 - `github.labels`, `github.issue_prefix`, `github.max_issues_per_run`
 - Scan summary JSON is written to **`tmp/wall_e_report.json`** (path is fixed in the gem today)
@@ -289,6 +293,7 @@ Prompts you can edit after install:
 
 - `high_complexity`: complexity metric (for example flog score) relative to configured threshold
 - `semantic_duplication`: estimated duplicated impact/lines
+- `structural_duplication`: flay base mass score (AST structural weight of the duplicated block)
 - `dead_code`: count-based dead-code signal
 - Other types: heuristic impact estimate (0-100)
 

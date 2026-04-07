@@ -3,6 +3,7 @@
 require "open3"
 require "shellwords"
 require_relative "../collectors/debride_collector"
+require_relative "../collectors/flay_collector"
 
 module TechDebt
   module Verification
@@ -24,6 +25,8 @@ module TechDebt
           verify_dead_code(payload)
         when "leaked_business_logic"
           verify_leaked_business_logic(payload)
+        when "structural_duplication"
+          verify_structural_duplication(payload)
         else
           inconclusive("No static verifier for debt_type `#{debt}`")
         end
@@ -86,6 +89,39 @@ module TechDebt
         still = content.match?(/Current\.\w+/)
         msg = still ? "Model still contains `Current.*` references." : "No `Current.*` references remain in this file."
         conclusive(!still, msg)
+      end
+
+      def verify_structural_duplication(payload)
+        path = payload["file_path"].to_s
+        return inconclusive("Missing file_path") if path.empty?
+
+        files = scan_targets(path)
+        return inconclusive("PR does not include `#{path}`; file may have moved (needs LLM).") if files.empty?
+
+        peer_files = extract_peer_files(payload["detail"].to_s).select { |f| File.file?(f) }
+        scan_files = (files + peer_files).uniq
+
+        baseline_mass = payload.dig("baseline_metrics", "flay_mass").to_f
+        threshold = @config.flay_threshold
+
+        candidates = Collectors::FlayCollector.new(@config, files: scan_files).call
+        current_mass = candidates
+          .select { |c| c[:file] == path }
+          .map { |c| c[:score] }
+          .max || 0
+
+        if current_mass.zero?
+          return conclusive(true, "Flay no longer reports structural duplication for `#{path}` above the threshold.")
+        end
+
+        passed = current_mass < threshold || (baseline_mass.positive? && current_mass <= baseline_mass * 0.8)
+        msg = "Flay mass for `#{path}` is #{current_mass} (threshold #{threshold}" \
+              "#{baseline_mass.positive? ? ", baseline was #{baseline_mass}" : ''})."
+        conclusive(passed, msg)
+      end
+
+      def extract_peer_files(detail)
+        detail.scan(%r{[\w./\-]+\.rb}).uniq
       end
 
       def scan_targets(path)

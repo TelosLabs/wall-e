@@ -30,6 +30,7 @@ analysis:
     - "db/migrate/**"
     - "node_modules/**"
   flog_threshold: 25 # methods with a flog score above this are surfaced as high_complexity candidates
+  flay_threshold: 25 # structural duplication groups with mass below this are ignored
 
 github:
   repo: null # defaults to GITHUB_REPOSITORY env var

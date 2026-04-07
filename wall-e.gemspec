@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "debride", "~> 1.12"
   spec.add_dependency "faraday-retry"
+  spec.add_dependency "flay", "~> 2.13"
   spec.add_dependency "flog", "~> 4.8"
   spec.add_dependency "octokit", "~> 9.0"
   spec.add_dependency "railties", ">= 7.0"

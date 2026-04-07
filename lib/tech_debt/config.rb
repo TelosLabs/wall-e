@@ -8,6 +8,7 @@ module TechDebt
 
     SUMMARY_PATH = "tmp/wall_e_report.json"
     DEFAULT_FLOG_THRESHOLD = 25
+    DEFAULT_FLAY_THRESHOLD = 25
 
     attr_reader :raw
 
@@ -39,6 +40,10 @@ module TechDebt
 
     def flog_threshold
       analysis.fetch("flog_threshold", DEFAULT_FLOG_THRESHOLD).to_f
+    end
+
+    def flay_threshold
+      analysis.fetch("flay_threshold", DEFAULT_FLAY_THRESHOLD).to_i
     end
 
     def auto_assign

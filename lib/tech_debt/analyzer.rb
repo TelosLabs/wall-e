@@ -4,6 +4,7 @@ require "fileutils"
 require "json"
 require_relative "collectors/debride_collector"
 require_relative "collectors/complexity_collector"
+require_relative "collectors/flay_collector"
 require_relative "collectors/layer_collector"
 require_relative "github/fingerprint"
 require_relative "github/agent_assigner"
@@ -42,6 +43,7 @@ module TechDebt
       collectors = [
         Collectors::DebrideCollector.new(@config),
         Collectors::ComplexityCollector.new(@config),
+        Collectors::FlayCollector.new(@config),
         Collectors::LayerCollector.new(@config)
       ]
 
@@ -77,6 +79,8 @@ module TechDebt
         { "method_present" => true }
       when "leaked_business_logic"
         { "pattern_present" => true }
+      when "structural_duplication"
+        { "flay_mass" => score.to_f }
       else
         {}
       end
@@ -108,6 +112,8 @@ module TechDebt
         { "method_present" => true }
       when "leaked_business_logic"
         { "pattern_present" => true }
+      when "structural_duplication"
+        { "flay_mass" => item.fetch("score", 0).to_f }
       else
         {}
       end
